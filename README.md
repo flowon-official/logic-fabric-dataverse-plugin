@@ -37,30 +37,166 @@ Your administrator also needs to set up sign-in once for your organization: see
 3. Restart Claude Code, run `/mcp`, select **plugin:logic-fabric-dataverse:foundry** and choose to sign in. Sign in
    with your work account in the browser window that opens.
 
-## Use it
+## How a change is built
 
-Start a change with a request:
+Every change goes through six stages, the way a software change does. Claude does the work in each stage and stops
+at the gates for you: nothing is built until you approve what will be built, and nothing is finished until you
+accept it.
+
+```mermaid
+flowchart TD
+    request["1 Request<br/>start"] --> spec["2 Spec<br/>spec"]
+    spec -- "you approve" --> plan["3 Build plan<br/>plan"]
+    spec -. "small change:<br/>one approval" .-> build
+    plan -- "you approve" --> build["4 Build<br/>build"]
+    build -- "every test passes" --> review["5 Review<br/>review"]
+    review -- "findings to fix" --> build
+    review -- "nothing major open" --> accept["6 Acceptance<br/>accept"]
+    accept -- "you accept" --> done(["Accepted:<br/>ready for ALM"])
+    accept -. "you reject" .-> build
+    accept -. "you reject" .-> spec
+```
+
+| Stage | Command | What Claude does | Your part | Written to the change folder |
+|---|---|---|---|---|
+| 1 Request | `start <request>` | Looks at what exists and asks the questions the spec depends on | Answer them | `request.md` |
+| 2 Spec | `spec` | Writes the requirements, who may run what, and the acceptance criteria | `spec approve` | `spec.md` |
+| 3 Build plan | `plan` | Orders the work into tasks and writes the tests that prove each one | `plan approve` | `plan.md`, `tests/` |
+| 4 Build | `build` | Validates, saves and tests each artifact, then tests everything together | | `artifacts/`, `build-log.md`, `test-report.md` |
+| 5 Review | `review` | Has the change reviewed independently against the spec and the rules | | `review.md` |
+| 6 Acceptance | `accept` | Runs the acceptance scenarios again and shows you the evidence | `accept accept`, or reject | `acceptance.md` |
+
+Each command is `/logic-fabric-dataverse:<command>`. Run `/logic-fabric-dataverse:status` at any time to see the
+stage, which approvals still hold, the tasks done and open, the last test run, the open review findings and the next
+command to run.
+
+### 1. Request
 
 ```
 /logic-fabric-dataverse:start When a claim over $50,000 is reported, route it to the senior adjusters team and notify the claims manager
 ```
 
-Then move it through the stages. Claude stops at each gate for you:
+The first time, Claude creates `logic-fabric/workspace.yaml` in your repository: the Logic Fabric project, its
+solution and publisher prefix, your environments, and the test users (personas) that check who may run what. It
+asks you only which project.
 
-| Step | Command | What happens | Your part |
-|---|---|---|---|
-| 1 | `start` | Claude looks at what exists and asks the questions that matter | Answer them |
-| 2 | `spec` | A spec in business terms: requirements, who may run what, acceptance criteria | Approve it: `spec approve` |
-| 3 | `plan` | The build plan, task by task, and the tests that will prove it | Approve it: `plan approve` |
-| 4 | `build` | Each artifact validated, saved and tested; the whole set tested | |
-| 5 | `review` | An independent review against the spec and the rules; fixes loop back to build | |
-| 6 | `accept` | The acceptance scenarios run again with evidence | Accept or reject: `accept accept` |
+Claude then reads what already exists: the artifacts the request touches, the tables and choices involved, the teams
+and roles. It writes `request.md` with the request, what exists and could be reused, and its questions, and asks
+the ones the spec can't do without (who may run it, thresholds, which records, what happens on failure) in one
+message. Nothing is built or saved in this stage.
 
-`/logic-fabric-dataverse:status` shows where things stand. A small change (two artifacts or fewer, no table
-changes) takes one approval instead of two. Everything is written to `logic-fabric/changes/<change>/` in your
-repository: commit it, and review it like code.
+### 2. Spec
 
-For the projects you already have:
+`spec` writes `spec.md` in your business's words and Logic Fabric terms:
+
+- the data model, with every table, column and choice value checked against Dataverse or declared new;
+- one requirement per behaviour (`REQ-1`, `REQ-2`, ...), each naming the artifact that will do it, for example the
+  flow `Claims_RouteHighValueClaim`;
+- an access statement for every entry point: who may run it, under which condition, and what someone refused is
+  told;
+- acceptance criteria with concrete values: *Given a claim with an estimated loss of 50,001, when it is reported,
+  then it is assigned to the Senior Adjusters team and the claims manager is notified.*
+
+Claude checks the spec (criteria for every requirement, no missing column, role or team, no "to be decided") and
+shows you a summary. Approve it with `/logic-fabric-dataverse:spec approve`, then commit the change folder.
+
+### 3. Build plan
+
+`plan` turns the approved spec into `plan.md`, one task per artifact, in the order they can be built: tables first,
+then configurations and service connections, blocks before the flows that call them, business processes, and the
+go-live steps last (enabling recipes and schedules, publishing processes, exposing agent tools). Each task lists its
+inputs and outputs, its access rule, its tests and when it is done. A change to an existing artifact lists what uses
+it, and their tests join the regression run.
+
+It also writes the test cases in `tests/`: every acceptance criterion, the boundaries (50,000 and 50,001), the
+failures, and for every access rule a user who may run it and one who may not.
+
+The plan's summary tells you what will exist, what changes, what goes live and when, what is deleted, and the
+risks. Approve it with `/logic-fabric-dataverse:plan approve`, then commit.
+
+### 4. Build
+
+`build` works through the tasks in order. For each one, Claude writes the metadata, has Logic Foundry validate it
+and fixes what it reports, saves it to the development environment, and runs the task's tests. The source of every
+saved artifact is written to `artifacts/`, so it is versioned and reviewed with the change. Go-live tasks run only
+after the tests of what they make live have passed.
+
+When every task is done, Claude runs all the change's tests and the regression set on fresh test data and writes
+`test-report.md`, which traces each acceptance criterion to the tests that prove it.
+
+If a task still fails after three attempts, Claude stops, marks it blocked with the error and tells you. If the
+build needs something the plan doesn't have (a new artifact, a changed input, a table change), Claude adds it to
+the plan and asks you to approve the plan again.
+
+### 5. Review
+
+`review` gives the change to a reviewer agent that sees the artifacts, the spec and the plan, but not Claude's
+opinion of its own work. It checks them against the spec, the plan and the rule catalog. A change to a business
+process also gets a process analysis, and a change to who can run what gets a security review. Findings go into
+`review.md` with their severity, where they are, the rule, the evidence and the fix. Every blocker or major finding
+becomes a fix task: run `build`, then `review` again.
+
+### 6. Acceptance
+
+`accept` runs the acceptance scenarios again on fresh test data, checks that what is in the development environment
+matches `artifacts/`, and writes `acceptance.md`: each acceptance criterion with its evidence (records, outputs),
+the test totals and the review's verdict. Then you decide:
+
+- `/logic-fabric-dataverse:accept accept` closes the change. Its tests join the regression set in
+  `logic-fabric/baseline/tests/`, the requirements document is brought up to date, and the change is ready for ALM:
+  export the solution and run your pipeline to take it to test and production.
+- `/logic-fabric-dataverse:accept reject spec` or `accept reject build`, with your reason, sends it back to that
+  stage.
+
+### Small changes
+
+A change of at most two artifacts with no data model change (tables, columns, choices) is a small change: the
+plan's tasks go at the end of the spec, and one approval covers both.
+
+### Changing or removing what a change built
+
+An accepted change is closed. To change or remove what it built, start a new change. When a plan deletes an
+artifact, its summary names it (`Delete logicBlock Claims_CalculateHandlingFee: <reason>`), a task checks that
+nothing uses it, a test checks that it is gone, and the regression tests that covered it are marked retired, so
+they are skipped from then on instead of being deleted.
+
+### What the plugin enforces
+
+The plugin's hooks keep the workflow in place, whatever Claude is asked:
+
+- Claude can change the development environment (save, delete, go live, run tests) only while a change is being
+  built or fixed after review, and only against an approved plan (the approved spec, for a small change).
+- Each approval is stamped with a fingerprint of the file you approved. If the spec or plan is edited afterwards,
+  building stops until you approve it again. Ticking off a task doesn't count as an edit.
+- A delete goes through only when the approved plan names it.
+- Stages only move forward, except when you reject at acceptance, and a change can't retire its own tests to make
+  them pass.
+- At every prompt, Claude is told the active change, its stage and whether its approvals still hold.
+
+Test and production never change from Claude Code: they change through your solutions and pipelines.
+
+### The change folder
+
+```
+logic-fabric/
+  workspace.yaml            project, solution, prefix, environments, test users
+  glossary.md               the business's terms
+  baseline/tests/           regression tests from accepted changes
+  reports/                  reports from document, govern, insight and secure
+  changes/2026-11-20-route-high-value-claims/
+    status.yaml             stage, approvals and their fingerprints, test and review counts
+    request.md  spec.md  plan.md
+    tests/                  test cases
+    artifacts/              the source of every saved artifact
+    build-log.md  test-report.md  review.md  acceptance.md
+```
+
+Commit it after each approval and review it like code: the approvals, tests and sources travel with your solution
+in git.
+
+## Work with existing projects
+
+These commands only read, run at any time, and write their report to `logic-fabric/reports/`:
 
 | Command | What it does |
 |---|---|
@@ -68,7 +204,10 @@ For the projects you already have:
 | `/logic-fabric-dataverse:govern` | Checks the project against the governance rules and your own |
 | `/logic-fabric-dataverse:insight` | Analyzes the business processes: defects, bottlenecks, SLA risk, redesign ideas |
 | `/logic-fabric-dataverse:secure` | Who can run what, attack paths, missing access rules, exposed credentials |
-| `/logic-fabric-dataverse:agent-tools` | Prepares flows, blocks and processes to be tools for AI agents |
+
+`/logic-fabric-dataverse:agent-tools` prepares flows, blocks and processes to be tools for AI agents through Logic
+Conductor: descriptions written for an agent, documented inputs and an access rule. It changes artifacts, so it runs
+as a small change of its own.
 
 You can also just ask, for example "Why does the Close Claim flow fail for CLM-001014?".
 
