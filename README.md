@@ -45,13 +45,13 @@ accept it.
 
 ```mermaid
 flowchart TD
-    request["1 Request<br/>start"] --> spec["2 Spec<br/>spec"]
-    spec -- "you approve" --> plan["3 Build plan<br/>plan"]
+    request["Request<br/>start"] --> spec["Spec<br/>spec"]
+    spec -- "you approve" --> plan["Build plan<br/>plan"]
     spec -. "small change:<br/>one approval" .-> build
-    plan -- "you approve" --> build["4 Build<br/>build"]
-    build -- "every test passes" --> review["5 Review<br/>review"]
+    plan -- "you approve" --> build["Build<br/>build"]
+    build -- "every test passes" --> review["Review<br/>review"]
     review -- "findings to fix" --> build
-    review -- "nothing major open" --> accept["6 Acceptance<br/>accept"]
+    review -- "nothing major open" --> accept["Acceptance<br/>accept"]
     accept -- "you accept" --> done(["Accepted:<br/>ready for ALM"])
     accept -. "you reject" .-> build
     accept -. "you reject" .-> spec
@@ -59,18 +59,18 @@ flowchart TD
 
 | Stage | Command | What Claude does | Your part | Written to the change folder |
 |---|---|---|---|---|
-| 1 Request | `start <request>` | Looks at what exists and asks the questions the spec depends on | Answer them | `request.md` |
-| 2 Spec | `spec` | Writes the requirements, who may run what, and the acceptance criteria | `spec approve` | `spec.md` |
-| 3 Build plan | `plan` | Orders the work into tasks and writes the tests that prove each one | `plan approve` | `plan.md`, `tests/` |
-| 4 Build | `build` | Validates, saves and tests each artifact, then tests everything together | | `artifacts/`, `build-log.md`, `test-report.md` |
-| 5 Review | `review` | Has the change reviewed independently against the spec and the rules | | `review.md` |
-| 6 Acceptance | `accept` | Runs the acceptance scenarios again and shows you the evidence | `accept accept`, or reject | `acceptance.md` |
+| Request | `start <request>` | Looks at what exists and asks the questions the spec depends on | Answer them | `request.md` |
+| Spec | `spec` | Writes the requirements, who may run what, and the acceptance criteria | `spec approve` | `spec.md` |
+| Build plan | `plan` | Orders the work into tasks and writes the tests that prove each one | `plan approve` | `plan.md`, `tests/` |
+| Build | `build` | Validates, saves and tests each artifact, then tests everything together | | `artifacts/`, `build-log.md`, `test-report.md` |
+| Review | `review` | Has the change reviewed independently against the spec and the rules | | `review.md` |
+| Acceptance | `accept` | Runs the acceptance scenarios again and shows you the evidence | `accept accept`, or reject | `acceptance.md` |
 
 Each command is `/logic-fabric-dataverse:<command>`. Run `/logic-fabric-dataverse:status` at any time to see the
 stage, which approvals still hold, the tasks done and open, the last test run, the open review findings and the next
 command to run.
 
-### 1. Request
+### Request
 
 ```
 /logic-fabric-dataverse:start When a claim over $50,000 is reported, route it to the senior adjusters team and notify the claims manager
@@ -85,7 +85,7 @@ and roles. It writes `request.md` with the request, what exists and could be reu
 the ones the spec can't do without (who may run it, thresholds, which records, what happens on failure) in one
 message. Nothing is built or saved in this stage.
 
-### 2. Spec
+### Spec
 
 `spec` writes `spec.md` in your business's words and Logic Fabric terms:
 
@@ -100,7 +100,7 @@ message. Nothing is built or saved in this stage.
 Claude checks the spec (criteria for every requirement, no missing column, role or team, no "to be decided") and
 shows you a summary. Approve it with `/logic-fabric-dataverse:spec approve`, then commit the change folder.
 
-### 3. Build plan
+### Build plan
 
 `plan` turns the approved spec into `plan.md`, one task per artifact, in the order they can be built: tables first,
 then configurations and service connections, blocks before the flows that call them, business processes, and the
@@ -114,7 +114,7 @@ failures, and for every access rule a user who may run it and one who may not.
 The plan's summary tells you what will exist, what changes, what goes live and when, what is deleted, and the
 risks. Approve it with `/logic-fabric-dataverse:plan approve`, then commit.
 
-### 4. Build
+### Build
 
 `build` works through the tasks in order. For each one, Claude writes the metadata, has Logic Foundry validate it
 and fixes what it reports, saves it to the development environment, and runs the task's tests. The source of every
@@ -128,7 +128,7 @@ If a task still fails after three attempts, Claude stops, marks it blocked with 
 build needs something the plan doesn't have (a new artifact, a changed input, a table change), Claude adds it to
 the plan and asks you to approve the plan again.
 
-### 5. Review
+### Review
 
 `review` gives the change to a reviewer agent that sees the artifacts, the spec and the plan, but not Claude's
 opinion of its own work. It checks them against the spec, the plan and the rule catalog. A change to a business
@@ -136,7 +136,7 @@ process also gets a process analysis, and a change to who can run what gets a se
 `review.md` with their severity, where they are, the rule, the evidence and the fix. Every blocker or major finding
 becomes a fix task: run `build`, then `review` again.
 
-### 6. Acceptance
+### Acceptance
 
 `accept` runs the acceptance scenarios again on fresh test data, checks that what is in the development environment
 matches `artifacts/`, and writes `acceptance.md`: each acceptance criterion with its evidence (records, outputs),
