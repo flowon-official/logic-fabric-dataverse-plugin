@@ -1,0 +1,8 @@
+---
+description: Show where Logic Fabric changes stand - stage, open gates, tasks, tests and findings.
+---
+
+Read `logic-fabric/.active` and every `logic-fabric/changes/*/status.yaml`. For the active change show: stage,
+which gates are approved (and whether the approved files still match, as the context hook reports), tasks done and open in
+`plan.md`, the last test run (`tests_*`), open findings by severity, and the next command to run. List the other
+changes with their stage in one line each. Read only; change nothing.

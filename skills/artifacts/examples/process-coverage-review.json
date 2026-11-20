@@ -1,0 +1,917 @@
+{
+ "def": {
+  "processEntity": "fodemos_coveragedecision",
+  "processEntityProperties": [
+   "fodemos_coveragedecisionid",
+   "fodemos_name",
+   "fodemos_claimid"
+  ],
+  "title": {
+   "type": "const",
+   "tc": "String",
+   "value": "Coverage Exception Review"
+  },
+  "owner": {
+   "type": "const",
+   "tc": "Team",
+   "value": {
+    "entityId": "00000000-0000-0000-0000-000000000000",
+    "entityLogicalName": "team",
+    "displayName": "IC Claims Adjusters"
+   }
+  },
+  "dueDate": {
+   "type": "addDays",
+   "args": [
+    {
+     "type": "utcNow"
+    },
+    {
+     "type": "const",
+     "tc": "Integer",
+     "value": 10
+    }
+   ]
+  },
+  "startStage": "adjusterReview",
+  "stages": [
+   {
+    "uniqueName": "adjusterReview",
+    "title": {
+     "type": "const",
+     "tc": "String",
+     "value": "Adjuster coverage review"
+    },
+    "owner": {
+     "type": "const",
+     "tc": "Team",
+     "value": {
+      "entityId": "00000000-0000-0000-0000-000000000000",
+      "entityLogicalName": "team",
+      "displayName": "IC Claims Adjusters"
+     }
+    },
+    "dueDate": {
+     "type": "addDays",
+     "args": [
+      {
+       "type": "utcNow"
+      },
+      {
+       "type": "const",
+       "tc": "Integer",
+       "value": 2
+      }
+     ]
+    },
+    "assignmentOptions": {
+     "title": {
+      "type": "concat",
+      "args": [
+       {
+        "type": "const",
+        "tc": "String",
+        "value": "Review coverage exception: "
+       },
+       {
+        "type": "context",
+        "var": "@Process.Entity",
+        "prop": [
+         "fodemos_name"
+        ]
+       }
+      ]
+     },
+     "dueDate": {
+      "type": "addDays",
+      "args": [
+       {
+        "type": "utcNow"
+       },
+       {
+        "type": "const",
+        "tc": "Integer",
+        "value": 2
+       }
+      ]
+     },
+     "assignmentStrategy": {
+      "type": "Team",
+      "team": {
+       "type": "const",
+       "tc": "Team",
+       "value": {
+        "entityId": "00000000-0000-0000-0000-000000000000",
+        "entityLogicalName": "team",
+        "displayName": "IC Claims Adjusters"
+       }
+      }
+     },
+     "taskEntity": "fodemos_claimtask",
+     "taskProperties": [
+      "activityid",
+      "statecode",
+      "fodemos_outcome",
+      "fodemos_outcomecomments",
+      "modifiedby"
+     ]
+    },
+    "completionCriteria": {
+     "type": "lop",
+     "operator": "And",
+     "args": [
+      {
+       "type": "notNull",
+       "arg": {
+        "type": "context",
+        "var": "@Process.Stage.Instance.Task",
+        "prop": [
+         "fodemos_outcome"
+        ]
+       }
+      },
+      {
+       "type": "isNotEqualTo",
+       "args": [
+        {
+         "type": "context",
+         "var": "@Process.Stage.Instance.Task",
+         "prop": [
+          "fodemos_outcome"
+         ]
+        },
+        {
+         "type": "const",
+         "tc": "OptionSet",
+         "value": {
+          "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
+          "isGlobal": false,
+          "isTwoOptions": false,
+          "entityLogicalName": "fodemos_claimtask",
+          "propertyLogicalName": "fodemos_outcome",
+          "optionSetValue": 326950000
+         }
+        }
+       ]
+      }
+     ]
+    },
+    "metaInfo": {},
+    "onActivate": [
+     {
+      "name": "guide",
+      "objectName": "Handling_PrepareCoverageReview",
+      "type": "Flow",
+      "projectName": "<project>",
+      "inputBindings": {
+       "CoverageDecision": {
+        "type": "context",
+        "var": "@Process.Entity",
+        "prop": [
+         "fodemos_coveragedecisionid"
+        ]
+       }
+      },
+      "outputs": {}
+     }
+    ],
+    "onComplete": [
+     {
+      "name": "applyReview",
+      "objectName": "Handling_ApplyCoverageReviewOutcome",
+      "type": "Flow",
+      "projectName": "<project>",
+      "inputBindings": {
+       "CoverageDecision": {
+        "type": "context",
+        "var": "@Process.Entity",
+        "prop": [
+         "fodemos_coveragedecisionid"
+        ]
+       },
+       "Outcome": {
+        "type": "context",
+        "var": "@Process.Stage.Instance.Task",
+        "prop": [
+         "fodemos_outcome"
+        ]
+       },
+       "Comments": {
+        "type": "context",
+        "var": "@Process.Stage.Instance.Task",
+        "prop": [
+         "fodemos_outcomecomments"
+        ]
+       },
+       "DecidedBy": {
+        "type": "context",
+        "var": "@Process.Stage.Instance.Task",
+        "prop": [
+         "modifiedby"
+        ]
+       }
+      },
+      "outputs": {}
+     }
+    ],
+    "escalation": {
+     "target": "overdueReview"
+    }
+   },
+   {
+    "uniqueName": "overdueReview",
+    "title": {
+     "type": "const",
+     "tc": "String",
+     "value": "Overdue coverage review (escalated)"
+    },
+    "owner": {
+     "type": "const",
+     "tc": "Team",
+     "value": {
+      "entityId": "00000000-0000-0000-0000-000000000000",
+      "entityLogicalName": "team",
+      "displayName": "IC Claims Supervisors"
+     }
+    },
+    "dueDate": {
+     "type": "addDays",
+     "args": [
+      {
+       "type": "utcNow"
+      },
+      {
+       "type": "const",
+       "tc": "Integer",
+       "value": 1
+      }
+     ]
+    },
+    "assignmentOptions": {
+     "title": {
+      "type": "concat",
+      "args": [
+       {
+        "type": "const",
+        "tc": "String",
+        "value": "ESCALATED - coverage review overdue: "
+       },
+       {
+        "type": "context",
+        "var": "@Process.Entity",
+        "prop": [
+         "fodemos_name"
+        ]
+       }
+      ]
+     },
+     "dueDate": {
+      "type": "addDays",
+      "args": [
+       {
+        "type": "utcNow"
+       },
+       {
+        "type": "const",
+        "tc": "Integer",
+        "value": 1
+       }
+      ]
+     },
+     "assignmentStrategy": {
+      "type": "Team",
+      "team": {
+       "type": "const",
+       "tc": "Team",
+       "value": {
+        "entityId": "00000000-0000-0000-0000-000000000000",
+        "entityLogicalName": "team",
+        "displayName": "IC Claims Supervisors"
+       }
+      }
+     },
+     "taskEntity": "fodemos_claimtask",
+     "taskProperties": [
+      "activityid",
+      "statecode",
+      "fodemos_outcome",
+      "fodemos_outcomecomments",
+      "modifiedby"
+     ]
+    },
+    "completionCriteria": {
+     "type": "lop",
+     "operator": "And",
+     "args": [
+      {
+       "type": "notNull",
+       "arg": {
+        "type": "context",
+        "var": "@Process.Stage.Instance.Task",
+        "prop": [
+         "fodemos_outcome"
+        ]
+       }
+      },
+      {
+       "type": "isNotEqualTo",
+       "args": [
+        {
+         "type": "context",
+         "var": "@Process.Stage.Instance.Task",
+         "prop": [
+          "fodemos_outcome"
+         ]
+        },
+        {
+         "type": "const",
+         "tc": "OptionSet",
+         "value": {
+          "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
+          "isGlobal": false,
+          "isTwoOptions": false,
+          "entityLogicalName": "fodemos_claimtask",
+          "propertyLogicalName": "fodemos_outcome",
+          "optionSetValue": 326950000
+         }
+        }
+       ]
+      }
+     ]
+    },
+    "metaInfo": {},
+    "onActivate": [],
+    "onComplete": [
+     {
+      "name": "applyEscalatedReview",
+      "objectName": "Handling_ApplyCoverageReviewOutcome",
+      "type": "Flow",
+      "projectName": "<project>",
+      "inputBindings": {
+       "CoverageDecision": {
+        "type": "context",
+        "var": "@Process.Entity",
+        "prop": [
+         "fodemos_coveragedecisionid"
+        ]
+       },
+       "Outcome": {
+        "type": "context",
+        "var": "@Process.Stage.Instance.Task",
+        "prop": [
+         "fodemos_outcome"
+        ]
+       },
+       "Comments": {
+        "type": "context",
+        "var": "@Process.Stage.Instance.Task",
+        "prop": [
+         "fodemos_outcomecomments"
+        ]
+       },
+       "DecidedBy": {
+        "type": "context",
+        "var": "@Process.Stage.Instance.Task",
+        "prop": [
+         "modifiedby"
+        ]
+       }
+      },
+      "outputs": {}
+     }
+    ]
+   },
+   {
+    "uniqueName": "awaitEvidence",
+    "title": {
+     "type": "const",
+     "tc": "String",
+     "value": "Await requested evidence"
+    },
+    "owner": {
+     "type": "const",
+     "tc": "Team",
+     "value": {
+      "entityId": "00000000-0000-0000-0000-000000000000",
+      "entityLogicalName": "team",
+      "displayName": "IC Intake Representatives"
+     }
+    },
+    "dueDate": {
+     "type": "addDays",
+     "args": [
+      {
+       "type": "utcNow"
+      },
+      {
+       "type": "const",
+       "tc": "Integer",
+       "value": 7
+      }
+     ]
+    },
+    "assignmentOptions": {
+     "title": {
+      "type": "concat",
+      "args": [
+       {
+        "type": "const",
+        "tc": "String",
+        "value": "Collect requested evidence for "
+       },
+       {
+        "type": "context",
+        "var": "@Process.Entity",
+        "prop": [
+         "fodemos_name"
+        ]
+       }
+      ]
+     },
+     "dueDate": {
+      "type": "addDays",
+      "args": [
+       {
+        "type": "utcNow"
+       },
+       {
+        "type": "const",
+        "tc": "Integer",
+        "value": 7
+       }
+      ]
+     },
+     "assignmentStrategy": {
+      "type": "Team",
+      "team": {
+       "type": "const",
+       "tc": "Team",
+       "value": {
+        "entityId": "00000000-0000-0000-0000-000000000000",
+        "entityLogicalName": "team",
+        "displayName": "IC Intake Representatives"
+       }
+      }
+     },
+     "taskEntity": "fodemos_claimtask",
+     "taskProperties": [
+      "activityid",
+      "statecode",
+      "fodemos_outcome",
+      "fodemos_outcomecomments",
+      "modifiedby"
+     ]
+    },
+    "completionCriteria": {
+     "type": "lop",
+     "operator": "And",
+     "args": [
+      {
+       "type": "notNull",
+       "arg": {
+        "type": "context",
+        "var": "@Process.Stage.Instance.Task",
+        "prop": [
+         "fodemos_outcome"
+        ]
+       }
+      },
+      {
+       "type": "isNotEqualTo",
+       "args": [
+        {
+         "type": "context",
+         "var": "@Process.Stage.Instance.Task",
+         "prop": [
+          "fodemos_outcome"
+         ]
+        },
+        {
+         "type": "const",
+         "tc": "OptionSet",
+         "value": {
+          "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
+          "isGlobal": false,
+          "isTwoOptions": false,
+          "entityLogicalName": "fodemos_claimtask",
+          "propertyLogicalName": "fodemos_outcome",
+          "optionSetValue": 326950000
+         }
+        }
+       ]
+      }
+     ]
+    },
+    "metaInfo": {},
+    "onActivate": [],
+    "onComplete": []
+   },
+   {
+    "uniqueName": "denialApproval",
+    "title": {
+     "type": "const",
+     "tc": "String",
+     "value": "Supervisor approval of denial"
+    },
+    "owner": {
+     "type": "const",
+     "tc": "Team",
+     "value": {
+      "entityId": "00000000-0000-0000-0000-000000000000",
+      "entityLogicalName": "team",
+      "displayName": "IC Claims Supervisors"
+     }
+    },
+    "dueDate": {
+     "type": "addDays",
+     "args": [
+      {
+       "type": "utcNow"
+      },
+      {
+       "type": "const",
+       "tc": "Integer",
+       "value": 1
+      }
+     ]
+    },
+    "assignmentOptions": {
+     "title": {
+      "type": "concat",
+      "args": [
+       {
+        "type": "const",
+        "tc": "String",
+        "value": "Approve coverage denial: "
+       },
+       {
+        "type": "context",
+        "var": "@Process.Entity",
+        "prop": [
+         "fodemos_name"
+        ]
+       }
+      ]
+     },
+     "dueDate": {
+      "type": "addDays",
+      "args": [
+       {
+        "type": "utcNow"
+       },
+       {
+        "type": "const",
+        "tc": "Integer",
+        "value": 1
+       }
+      ]
+     },
+     "assignmentStrategy": {
+      "type": "Team",
+      "team": {
+       "type": "const",
+       "tc": "Team",
+       "value": {
+        "entityId": "00000000-0000-0000-0000-000000000000",
+        "entityLogicalName": "team",
+        "displayName": "IC Claims Supervisors"
+       }
+      }
+     },
+     "taskEntity": "fodemos_claimtask",
+     "taskProperties": [
+      "activityid",
+      "statecode",
+      "fodemos_outcome",
+      "fodemos_outcomecomments",
+      "modifiedby"
+     ]
+    },
+    "completionCriteria": {
+     "type": "lop",
+     "operator": "And",
+     "args": [
+      {
+       "type": "notNull",
+       "arg": {
+        "type": "context",
+        "var": "@Process.Stage.Instance.Task",
+        "prop": [
+         "fodemos_outcome"
+        ]
+       }
+      },
+      {
+       "type": "isNotEqualTo",
+       "args": [
+        {
+         "type": "context",
+         "var": "@Process.Stage.Instance.Task",
+         "prop": [
+          "fodemos_outcome"
+         ]
+        },
+        {
+         "type": "const",
+         "tc": "OptionSet",
+         "value": {
+          "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
+          "isGlobal": false,
+          "isTwoOptions": false,
+          "entityLogicalName": "fodemos_claimtask",
+          "propertyLogicalName": "fodemos_outcome",
+          "optionSetValue": 326950000
+         }
+        }
+       ]
+      }
+     ]
+    },
+    "metaInfo": {},
+    "onActivate": [],
+    "onComplete": [
+     {
+      "name": "applyDenial",
+      "objectName": "Financials_ApplySupervisorDecision",
+      "type": "Flow",
+      "projectName": "<project>",
+      "inputBindings": {
+       "CoverageDecision": {
+        "type": "context",
+        "var": "@Process.Entity",
+        "prop": [
+         "fodemos_coveragedecisionid"
+        ]
+       },
+       "Outcome": {
+        "type": "context",
+        "var": "@Process.Stage.Instance.Task",
+        "prop": [
+         "fodemos_outcome"
+        ]
+       },
+       "Comments": {
+        "type": "context",
+        "var": "@Process.Stage.Instance.Task",
+        "prop": [
+         "fodemos_outcomecomments"
+        ]
+       }
+      },
+      "outputs": {}
+     }
+    ]
+   }
+  ],
+  "gateways": [],
+  "ends": [
+   {
+    "uniqueName": "covered",
+    "metaInfo": {
+     "title": "Covered"
+    }
+   },
+   {
+    "uniqueName": "denied",
+    "metaInfo": {
+     "title": "Denied"
+    }
+   }
+  ],
+  "transitions": [
+   {
+    "source": "adjusterReview",
+    "target": "covered",
+    "guard": {
+     "type": "isEqualTo",
+     "args": [
+      {
+       "type": "context",
+       "var": "@Process.Stage.Instance.Task",
+       "prop": [
+        "fodemos_outcome"
+       ]
+      },
+      {
+       "type": "const",
+       "tc": "OptionSet",
+       "value": {
+        "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
+        "isGlobal": false,
+        "isTwoOptions": false,
+        "entityLogicalName": "fodemos_claimtask",
+        "propertyLogicalName": "fodemos_outcome",
+        "optionSetValue": 326950001
+       }
+      }
+     ]
+    }
+   },
+   {
+    "source": "adjusterReview",
+    "target": "denialApproval",
+    "guard": {
+     "type": "isEqualTo",
+     "args": [
+      {
+       "type": "context",
+       "var": "@Process.Stage.Instance.Task",
+       "prop": [
+        "fodemos_outcome"
+       ]
+      },
+      {
+       "type": "const",
+       "tc": "OptionSet",
+       "value": {
+        "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
+        "isGlobal": false,
+        "isTwoOptions": false,
+        "entityLogicalName": "fodemos_claimtask",
+        "propertyLogicalName": "fodemos_outcome",
+        "optionSetValue": 326950002
+       }
+      }
+     ]
+    }
+   },
+   {
+    "source": "adjusterReview",
+    "target": "awaitEvidence",
+    "guard": {
+     "type": "isEqualTo",
+     "args": [
+      {
+       "type": "context",
+       "var": "@Process.Stage.Instance.Task",
+       "prop": [
+        "fodemos_outcome"
+       ]
+      },
+      {
+       "type": "const",
+       "tc": "OptionSet",
+       "value": {
+        "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
+        "isGlobal": false,
+        "isTwoOptions": false,
+        "entityLogicalName": "fodemos_claimtask",
+        "propertyLogicalName": "fodemos_outcome",
+        "optionSetValue": 326950004
+       }
+      }
+     ]
+    }
+   },
+   {
+    "source": "overdueReview",
+    "target": "covered",
+    "guard": {
+     "type": "isEqualTo",
+     "args": [
+      {
+       "type": "context",
+       "var": "@Process.Stage.Instance.Task",
+       "prop": [
+        "fodemos_outcome"
+       ]
+      },
+      {
+       "type": "const",
+       "tc": "OptionSet",
+       "value": {
+        "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
+        "isGlobal": false,
+        "isTwoOptions": false,
+        "entityLogicalName": "fodemos_claimtask",
+        "propertyLogicalName": "fodemos_outcome",
+        "optionSetValue": 326950001
+       }
+      }
+     ]
+    }
+   },
+   {
+    "source": "overdueReview",
+    "target": "denialApproval",
+    "guard": {
+     "type": "isEqualTo",
+     "args": [
+      {
+       "type": "context",
+       "var": "@Process.Stage.Instance.Task",
+       "prop": [
+        "fodemos_outcome"
+       ]
+      },
+      {
+       "type": "const",
+       "tc": "OptionSet",
+       "value": {
+        "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
+        "isGlobal": false,
+        "isTwoOptions": false,
+        "entityLogicalName": "fodemos_claimtask",
+        "propertyLogicalName": "fodemos_outcome",
+        "optionSetValue": 326950002
+       }
+      }
+     ]
+    }
+   },
+   {
+    "source": "overdueReview",
+    "target": "awaitEvidence",
+    "guard": {
+     "type": "isEqualTo",
+     "args": [
+      {
+       "type": "context",
+       "var": "@Process.Stage.Instance.Task",
+       "prop": [
+        "fodemos_outcome"
+       ]
+      },
+      {
+       "type": "const",
+       "tc": "OptionSet",
+       "value": {
+        "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
+        "isGlobal": false,
+        "isTwoOptions": false,
+        "entityLogicalName": "fodemos_claimtask",
+        "propertyLogicalName": "fodemos_outcome",
+        "optionSetValue": 326950004
+       }
+      }
+     ]
+    }
+   },
+   {
+    "source": "awaitEvidence",
+    "target": "adjusterReview",
+    "guard": {
+     "type": "const",
+     "tc": "Boolean",
+     "value": true
+    }
+   },
+   {
+    "source": "denialApproval",
+    "target": "denied",
+    "guard": {
+     "type": "isEqualTo",
+     "args": [
+      {
+       "type": "context",
+       "var": "@Process.Stage.Instance.Task",
+       "prop": [
+        "fodemos_outcome"
+       ]
+      },
+      {
+       "type": "const",
+       "tc": "OptionSet",
+       "value": {
+        "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
+        "isGlobal": false,
+        "isTwoOptions": false,
+        "entityLogicalName": "fodemos_claimtask",
+        "propertyLogicalName": "fodemos_outcome",
+        "optionSetValue": 326950001
+       }
+      }
+     ]
+    }
+   },
+   {
+    "source": "denialApproval",
+    "target": "adjusterReview",
+    "guard": {
+     "type": "isEqualTo",
+     "args": [
+      {
+       "type": "context",
+       "var": "@Process.Stage.Instance.Task",
+       "prop": [
+        "fodemos_outcome"
+       ]
+      },
+      {
+       "type": "const",
+       "tc": "OptionSet",
+       "value": {
+        "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
+        "isGlobal": false,
+        "isTwoOptions": false,
+        "entityLogicalName": "fodemos_claimtask",
+        "propertyLogicalName": "fodemos_outcome",
+        "optionSetValue": 326950002
+       }
+      }
+     ]
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,79 @@
+{
+ "def": {
+  "input": {
+   "EligibleAmount": {
+    "type": "Money",
+    "list": false,
+    "required": true,
+    "metaInfo": {}
+   },
+   "Deductible": {
+    "type": "Money",
+    "list": false,
+    "required": true,
+    "metaInfo": {}
+   },
+   "CoverageLimit": {
+    "type": "Money",
+    "list": false,
+    "required": true,
+    "metaInfo": {}
+   },
+   "PriorPayments": {
+    "type": "Money",
+    "list": false,
+    "required": true,
+    "metaInfo": {}
+   }
+  },
+  "type": {
+   "typeCode": "Money"
+  },
+  "formula": {
+   "type": "max",
+   "args": [
+    {
+     "type": "min",
+     "args": [
+      {
+       "type": "sub",
+       "args": [
+        {
+         "type": "context",
+         "var": "input#EligibleAmount",
+         "prop": []
+        },
+        {
+         "type": "context",
+         "var": "input#Deductible",
+         "prop": []
+        }
+       ]
+      },
+      {
+       "type": "sub",
+       "args": [
+        {
+         "type": "context",
+         "var": "input#CoverageLimit",
+         "prop": []
+        },
+        {
+         "type": "context",
+         "var": "input#PriorPayments",
+         "prop": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "const",
+     "tc": "Money",
+     "value": 0
+    }
+   ]
+  },
+  "dataFetchers": {}
+ }
+}

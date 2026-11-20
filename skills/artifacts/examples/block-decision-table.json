@@ -1,0 +1,363 @@
+{
+ "def": {
+  "input": {
+   "PotentialDuplicate": {
+    "type": "Boolean",
+    "list": false,
+    "required": true,
+    "metaInfo": {}
+   },
+   "PolicyFound": {
+    "type": "Boolean",
+    "list": false,
+    "required": true,
+    "metaInfo": {}
+   },
+   "InjuryReported": {
+    "type": "Boolean",
+    "list": false,
+    "required": true,
+    "metaInfo": {}
+   },
+   "MissingEvidence": {
+    "type": "Boolean",
+    "list": false,
+    "required": true,
+    "metaInfo": {}
+   }
+  },
+  "conditions": {
+   "Duplicate": {
+    "metaInfo": {},
+    "type": "Boolean",
+    "value": {
+     "type": "context",
+     "var": "input#PotentialDuplicate",
+     "prop": []
+    }
+   },
+   "Policy Found": {
+    "metaInfo": {},
+    "type": "Boolean",
+    "value": {
+     "type": "context",
+     "var": "input#PolicyFound",
+     "prop": []
+    }
+   },
+   "Injury": {
+    "metaInfo": {},
+    "type": "Boolean",
+    "value": {
+     "type": "context",
+     "var": "input#InjuryReported",
+     "prop": []
+    }
+   },
+   "Missing Evidence": {
+    "metaInfo": {},
+    "type": "Boolean",
+    "value": {
+     "type": "context",
+     "var": "input#MissingEvidence",
+     "prop": []
+    }
+   }
+  },
+  "output": {
+   "QueueCode": {
+    "type": "String",
+    "list": false,
+    "metaInfo": {}
+   },
+   "NextAction": {
+    "type": "String",
+    "list": false,
+    "metaInfo": {}
+   },
+   "DueHours": {
+    "type": "Integer",
+    "list": false,
+    "metaInfo": {}
+   },
+   "ReasonCode": {
+    "type": "String",
+    "list": false,
+    "metaInfo": {}
+   }
+  },
+  "rows": [
+   {
+    "conditions": [
+     {
+      "condition": {
+       "type": "isTrueFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     }
+    ],
+    "output": [
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "DUPLICATE-REVIEW"
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "Review potential duplicate before opening a second claim"
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "Integer",
+       "value": 8
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "RT-DUP"
+      }
+     }
+    ]
+   },
+   {
+    "conditions": [
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "isFalseFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     }
+    ],
+    "output": [
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "INTAKE-REVIEW"
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "Locate the policy and confirm the policyholder"
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "Integer",
+       "value": 8
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "RT-NOPOLICY"
+      }
+     }
+    ]
+   },
+   {
+    "conditions": [
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "isTrueFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     }
+    ],
+    "output": [
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "COVERAGE-REVIEW"
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "Contact the injured party and verify coverage"
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "Integer",
+       "value": 24
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "RT-INJURY"
+      }
+     }
+    ]
+   },
+   {
+    "conditions": [
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "isTrueFunc"
+      }
+     }
+    ],
+    "output": [
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "INTAKE-REVIEW"
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "Request the missing FNOL evidence"
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "Integer",
+       "value": 24
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "RT-EVIDENCE"
+      }
+     }
+    ]
+   },
+   {
+    "conditions": [
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     },
+     {
+      "condition": {
+       "type": "notNullFunc"
+      }
+     }
+    ],
+    "output": [
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "COVERAGE-REVIEW"
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "Verify coverage and create exposures"
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "Integer",
+       "value": 24
+      }
+     },
+     {
+      "value": {
+       "type": "const",
+       "tc": "String",
+       "value": "RT-STANDARD"
+      }
+     }
+    ]
+   }
+  ],
+  "dataFetchers": {}
+ }
+}

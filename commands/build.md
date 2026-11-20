@@ -1,0 +1,26 @@
+---
+description: Build the approved plan task by task - validate, save, export and test each artifact - and run the full test set.
+argument-hint: [task ID to resume from]
+---
+
+Follow the `logic-fabric-dataverse:authoring`, `logic-fabric-dataverse:artifacts`, `logic-fabric-dataverse:grammar`
+and `logic-fabric-dataverse:testing` skills. Stage 4 (Build) for the change in `logic-fabric/.active`.
+
+1. Check `status.yaml`: `stage: build` (or `review` with open fix tasks), and the context hook reports that the
+   approved file (`plan.md`, or `spec.md` for a quick change) matches its approval. If not, say what is wrong and stop. The gate hook refuses writes otherwise anyway.
+2. Take the first unticked task (or the one given: $ARGUMENTS). For each task, in order:
+   1. Read what it depends on (`get`), the reference for its kind (`reference`, `artifacts` skill) and the rules
+      for its kind (`reference` `topic: "rules"`).
+   2. Write the metadata, including the task's precondition.
+   3. `validate`. Fix every error at its `path` and validate again, at most three times; then mark the task
+      blocked in `plan.md` with the last error and stop.
+   4. `save` with `changeId` (the change folder name). The export hook writes the source to `artifacts/`.
+   5. Run the task's tests with `test` (personas from `workspace.yaml`). Fix and re-run, at most three times.
+   6. Tick the task in `plan.md` (or `spec.md` for a quick change; ticking keeps the approval) and append the artifact, its ID, version and test results to `build-log.md`.
+3. Go-live tasks run only after every unit test of what they make live has passed.
+4. Something the plan doesn't have (a new artifact, a changed signature, a data model change) is a **plan
+   amendment**: write it into `plan.md` and ask the owner to approve the plan again. Corrections inside a task's
+   signature need no approval.
+5. When every task is ticked, run every test in the change plus the regression set on fresh fixtures, write
+   `test-report.md` with the traceability matrix, update `tests_*` in `status.yaml`, and if everything passes set
+   `stage: review` and tell the user to run `/logic-fabric-dataverse:review`.

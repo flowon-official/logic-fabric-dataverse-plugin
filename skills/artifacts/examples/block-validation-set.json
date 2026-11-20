@@ -1,0 +1,196 @@
+{
+ "def": {
+  "input": {
+   "PolicyNumber": {
+    "type": "String",
+    "list": false,
+    "required": false,
+    "metaInfo": {}
+   },
+   "LossDate": {
+    "type": "DateTime",
+    "list": false,
+    "required": false,
+    "metaInfo": {},
+    "dateTimeBehavior": "DateOnly"
+   },
+   "LossLocation": {
+    "type": "String",
+    "list": false,
+    "required": false,
+    "metaInfo": {}
+   },
+   "LossDescription": {
+    "type": "String",
+    "list": false,
+    "required": false,
+    "metaInfo": {}
+   },
+   "ReporterPhone": {
+    "type": "String",
+    "list": false,
+    "required": false,
+    "metaInfo": {}
+   }
+  },
+  "returnFisrtValidationError": false,
+  "validations": {
+   "Enter the policy number.": {
+    "condition": {
+     "type": "notNullOrEmptyString",
+     "arg": {
+      "type": "context",
+      "var": "input#PolicyNumber",
+      "prop": []
+     }
+    }
+   },
+   "No policy was found with this policy number.": {
+    "condition": {
+     "type": "isGreaterThan",
+     "args": [
+      {
+       "type": "collectionCount",
+       "arg": {
+        "type": "context",
+        "var": "data_queries#Policy",
+        "prop": []
+       }
+      },
+      {
+       "type": "const",
+       "tc": "Integer",
+       "value": 0
+      }
+     ]
+    }
+   },
+   "Enter the loss date.": {
+    "condition": {
+     "type": "notNull",
+     "arg": {
+      "type": "context",
+      "var": "input#LossDate",
+      "prop": []
+     }
+    }
+   },
+   "The loss date cannot be in the future.": {
+    "condition": {
+     "type": "isLessThanOrEqualTo",
+     "args": [
+      {
+       "type": "context",
+       "var": "input#LossDate",
+       "prop": []
+      },
+      {
+       "type": "utcNow"
+      }
+     ]
+    }
+   },
+   "Losses older than three years cannot be reported through FNOL. Contact a supervisor.": {
+    "condition": {
+     "type": "isGreaterThanOrEqualTo",
+     "args": [
+      {
+       "type": "context",
+       "var": "input#LossDate",
+       "prop": []
+      },
+      {
+       "type": "addDays",
+       "args": [
+        {
+         "type": "utcNow"
+        },
+        {
+         "type": "const",
+         "tc": "Integer",
+         "value": -1095
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "Enter where the loss happened.": {
+    "condition": {
+     "type": "notNullOrEmptyString",
+     "arg": {
+      "type": "context",
+      "var": "input#LossLocation",
+      "prop": []
+     }
+    }
+   },
+   "Describe what happened in at least 20 characters.": {
+    "condition": {
+     "type": "isGreaterThanOrEqualTo",
+     "args": [
+      {
+       "type": "length",
+       "arg": {
+        "type": "context",
+        "var": "input#LossDescription",
+        "prop": []
+       }
+      },
+      {
+       "type": "const",
+       "tc": "Integer",
+       "value": 20
+      }
+     ]
+    }
+   },
+   "Enter a phone number so the adjuster can reach the reporter.": {
+    "condition": {
+     "type": "notNullOrEmptyString",
+     "arg": {
+      "type": "context",
+      "var": "input#ReporterPhone",
+      "prop": []
+     }
+    }
+   }
+  },
+  "dataFetchers": {
+   "Policy": {
+    "type": "Query",
+    "multiplicity": "All",
+    "query": {
+     "entityName": "fodemos_policy",
+     "columnSet": [
+      "fodemos_policyid",
+      "fodemos_name"
+     ],
+     "filter": {
+      "logicalOperator": 0,
+      "filters": [],
+      "conditions": [
+       {
+        "attributeName": "fodemos_name",
+        "attributeType": "Microsoft.Dynamics.CRM.StringAttributeMetadata",
+        "operator": "Equal",
+        "values": {
+         "operand": [
+          {
+           "type": "context",
+           "var": "input#PolicyNumber",
+           "prop": []
+          }
+         ]
+        }
+       }
+      ]
+     },
+     "linkedEntities": [],
+     "orders": []
+    },
+    "metaInfo": {}
+   }
+  }
+ }
+}

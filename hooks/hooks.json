@@ -1,0 +1,60 @@
+{
+  "description": "The Logic Fabric workflow's hooks: the gate (Foundry writes only in the build stage, against the approved plan), the stage guard (stages move forward; approval hashes are never written by hand), approval hashes stamped when an approval is recorded, the active change's state at each prompt, and the export of each saved artifact's source into the change folder.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__plugin_logic-fabric-dataverse_foundry__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/gate.mjs\"",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stage.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__plugin_logic-fabric-dataverse_foundry__save",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/export.mjs\"",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/approval.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/context.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

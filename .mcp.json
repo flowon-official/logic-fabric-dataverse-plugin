@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "foundry": {
+      "type": "http",
+      "url": "${user_config.foundry_url}",
+      "oauth": {
+        "clientId": "2ca7b075-1954-40ec-adeb-91cb4d3f3df4",
+        "callbackPort": 47823
+      }
+    }
+  }
+}

@@ -1,0 +1,259 @@
+{
+ "def": {
+  "input": {
+   "ClaimNumber": {
+    "type": "String",
+    "list": false,
+    "required": true,
+    "metaInfo": {}
+   }
+  },
+  "output": {
+   "Stage": {
+    "type": "String",
+    "list": false,
+    "metaInfo": {}
+   },
+   "ClosedOn": {
+    "type": "DateTime",
+    "list": false,
+    "metaInfo": {}
+   },
+   "CycleTimeDays": {
+    "type": "Integer",
+    "list": false,
+    "metaInfo": {}
+   }
+  },
+  "action": {
+   "type": "Sequential",
+   "metaInfo": {},
+   "actions": {
+    "Claim": {
+     "type": "ExecuteQuery",
+     "metaInfo": {},
+     "query": {
+      "entityName": "fodemos_claim",
+      "columnSet": [
+       "fodemos_claimid",
+       "fodemos_name"
+      ],
+      "filter": {
+       "logicalOperator": 0,
+       "filters": [],
+       "conditions": [
+        {
+         "attributeName": "fodemos_name",
+         "attributeType": "Microsoft.Dynamics.CRM.StringAttributeMetadata",
+         "operator": "Equal",
+         "values": {
+          "operand": [
+           {
+            "type": "context",
+            "var": "input#ClaimNumber",
+            "prop": []
+           }
+          ]
+         }
+        }
+       ]
+      },
+      "linkedEntities": [],
+      "orders": []
+     },
+     "multiplicity": "Single"
+    },
+    "Unknown Claim": {
+     "type": "Condition",
+     "metaInfo": {},
+     "condition": {
+      "type": "null",
+      "arg": {
+       "type": "context",
+       "var": "Claim#query_result",
+       "prop": [
+        "fodemos_claimid"
+       ]
+      }
+     },
+     "true": {
+      "actions": {
+       "No Claim": {
+        "type": "RaiseError",
+        "metaInfo": {},
+        "errorCode": "CLAIM_NOT_FOUND",
+        "errorMessage": {
+         "type": "concat",
+         "args": [
+          {
+           "type": "const",
+           "tc": "String",
+           "value": "No claim was found with number "
+          },
+          {
+           "type": "context",
+           "var": "input#ClaimNumber",
+           "prop": []
+          },
+          {
+           "type": "const",
+           "tc": "String",
+           "value": "."
+          }
+         ]
+        }
+       }
+      }
+     },
+     "false": {
+      "actions": {}
+     }
+    },
+    "Close": {
+     "type": "NewVariable",
+     "metaInfo": {},
+     "typeMetadata": {
+      "typeCode": "Entity",
+      "list": false,
+      "entityLogicalName": "fodemos_claim",
+      "properties": [
+       "fodemos_claimid",
+       "fodemos_claimstage",
+       "fodemos_name"
+      ]
+     }
+    },
+    "Set Close": {
+     "type": "UpdateVariable",
+     "metaInfo": {},
+     "variableName": "Close",
+     "value": {
+      "isPrimitive": false,
+      "type": {
+       "list": false,
+       "type": "Entity",
+       "entityLogicalName": "fodemos_claim",
+       "properties": [
+        "fodemos_claimid",
+        "fodemos_claimstage"
+       ]
+      },
+      "propertySet": {
+       "fodemos_claimid": {
+        "operators": [
+         {
+          "operator": "set",
+          "args": {
+           "value": {
+            "type": "entityReference",
+            "logicalName": "fodemos_claim",
+            "value": {
+             "type": "context",
+             "var": "Claim#query_result",
+             "prop": [
+              "fodemos_claimid"
+             ]
+            }
+           }
+          }
+         }
+        ],
+        "properties": {}
+       },
+       "fodemos_claimstage": {
+        "operators": [
+         {
+          "operator": "set",
+          "args": {
+           "value": {
+            "type": "const",
+            "tc": "OptionSet",
+            "value": {
+             "optionSetLogicalName": "fodemos_claimstage",
+             "isGlobal": true,
+             "isTwoOptions": false,
+             "optionSetValue": 326950010
+            }
+           }
+          }
+         }
+        ],
+        "properties": {}
+       }
+      }
+     }
+    },
+    "Save Close": {
+     "type": "SaveEntity",
+     "metaInfo": {},
+     "entity": {
+      "type": "context",
+      "var": "Close",
+      "prop": []
+     },
+     "reloadEntityAfterSave": true
+    },
+    "After": {
+     "type": "GetEntityById",
+     "metaInfo": {},
+     "entityLogicalName": "fodemos_claim",
+     "entityId": {
+      "type": "entityReference",
+      "logicalName": "fodemos_claim",
+      "value": {
+       "type": "context",
+       "var": "Claim#query_result",
+       "prop": [
+        "fodemos_claimid"
+       ]
+      }
+     },
+     "properties": [
+      "fodemos_claimstage",
+      "fodemos_closedon",
+      "fodemos_cycletimedays"
+     ]
+    },
+    "Return": {
+     "type": "SetOutput",
+     "metaInfo": {},
+     "outputs": {
+      "Stage": {
+       "expression": {
+        "type": "optionLabel",
+        "args": [
+         {
+          "type": "context",
+          "var": "After#entity",
+          "prop": [
+           "fodemos_claimstage"
+          ]
+         }
+        ]
+       }
+      },
+      "ClosedOn": {
+       "expression": {
+        "type": "context",
+        "var": "After#entity",
+        "prop": [
+         "fodemos_closedon"
+        ]
+       }
+      },
+      "CycleTimeDays": {
+       "expression": {
+        "type": "context",
+        "var": "After#entity",
+        "prop": [
+         "fodemos_cycletimedays"
+        ]
+       }
+      }
+     }
+    }
+   }
+  },
+  "dataFetchers": {}
+ }
+}

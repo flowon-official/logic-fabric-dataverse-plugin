@@ -1,0 +1,56 @@
+# tests/TC-3.1.yaml: a unit test of a block
+id: TC-3.1
+covers: [AC-3.1]
+level: unit
+target: { kind: logicBlock, name: Intake_RoutingRules }
+given:
+  input: { EstimatedLoss: 50000.01, Threshold: 50000, PotentialDuplicate: false }
+expect:
+  output:
+    QueueCode: HIGH-VALUE
+---
+# tests/TC-3.5.yaml: an integration test of a recipe (asynchronous step)
+id: TC-3.5
+covers: [AC-3.1]
+level: integration
+target: { kind: logicRecipe, name: Claim_OnCreate }
+fixtures:
+  - create: { table: fodemos_policy, as: policy, values: { fodemos_policynumber: "TST-{run}-P1" } }
+when:
+  create: { table: fodemos_claim, as: claim, values: { fodemos_name: "TST-{run}-C1", fodemos_policyid: "{policy}", fodemos_estimatedloss: { money: 50000.01 } } }
+expect:
+  - record: { ref: claim, columns: { fodemos_queuecode: HIGH-VALUE } }
+    within: 60s
+teardown: delete-created
+---
+# tests/TC-6.2.yaml: a precondition test (a refused persona)
+id: TC-6.2
+covers: [AC-6.2]
+level: unit
+target: { kind: logicFlow, name: Claims_CloseClaim }
+runAs: adjuster
+fixtures:
+  - create: { table: fodemos_claim, as: claim, values: { fodemos_name: "TST-{run}-C1" } }
+given:
+  input: { ClaimNumber: "TST-{run}-C1" }
+expect:
+  error: { code: UNAUTHORIZED_ACCESS }
+---
+# tests/TC-2.1.yaml: a removal (the plan deletes the block)
+id: TC-2.1
+covers: [AC-2.1]
+level: unit
+target: { kind: logicBlock, name: Financials_CalculateHandlingFee }
+expect:
+  absent: true
+---
+# baseline/tests/TC-1.1.yaml after that removal: retired, kept, reported as skipped
+retired: 2026-11-20-remove-handling-fee
+id: TC-1.1
+covers: [AC-1.1]
+level: unit
+target: { kind: logicBlock, name: Financials_CalculateHandlingFee }
+given:
+  input: { EstimatedLoss: 1000 }
+expect:
+  output: { Fee: 50 }
