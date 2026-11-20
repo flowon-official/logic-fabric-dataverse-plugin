@@ -1,6 +1,6 @@
 ---
 description: Prepare Logic Fabric flows, blocks and processes to be used by AI agents as MCP tools through Logic Conductor.
-argument-hint: [flow, block or process names...]
+argument-hint: "[flow, block or process names...]"
 ---
 
 Prepare these artifacts to be called by AI agents through Logic Conductor: $ARGUMENTS

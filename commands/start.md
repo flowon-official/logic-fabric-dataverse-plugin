@@ -1,6 +1,6 @@
 ---
 description: Start a Logic Fabric change from a request - discover what exists, ask the questions that matter, and write request.md.
-argument-hint: <what the business needs>
+argument-hint: "<what the business needs>"
 ---
 
 Follow the `logic-fabric-dataverse:authoring` skill. This is stage 1 (Prompt) for the request: $ARGUMENTS

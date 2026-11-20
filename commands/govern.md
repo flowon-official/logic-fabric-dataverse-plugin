@@ -1,6 +1,6 @@
 ---
 description: Check a Logic Fabric project against the governance rule catalog and the project's own rules; writes a findings report.
-argument-hint: [project] [sections...]
+argument-hint: "[project] [sections...]"
 ---
 
 Read-only; runs any time. Governance review of the project in `workspace.yaml` (or the one given): $ARGUMENTS

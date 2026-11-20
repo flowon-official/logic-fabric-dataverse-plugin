@@ -1,6 +1,6 @@
 ---
 description: Run the acceptance scenarios on fresh fixtures, show the evidence to the owner and record the decision.
-argument-hint: [accept | reject spec | reject build]
+argument-hint: "[accept | reject spec | reject build]"
 ---
 
 Follow the `logic-fabric-dataverse:testing` skill. Stage 6 (Acceptance) for the change in `logic-fabric/.active`.

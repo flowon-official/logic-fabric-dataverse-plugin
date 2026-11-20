@@ -1,6 +1,6 @@
 ---
 description: Write the change's spec in Logic Fabric terms, check it, and take the owner's approval.
-argument-hint: [approve]
+argument-hint: "[approve]"
 ---
 
 Follow the `logic-fabric-dataverse:authoring` skill. Stage 2 (Spec) for the change in `logic-fabric/.active`.

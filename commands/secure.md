@@ -1,6 +1,6 @@
 ---
 description: Security analysis of a Logic Fabric project - who can run what, attack paths, privilege escalation, segregation of duties, secrets and missing preconditions.
-argument-hint: [project]
+argument-hint: "[project]"
 ---
 
 Read-only; runs any time. Security analysis of the project in `workspace.yaml` (or the one given): $ARGUMENTS

@@ -1,6 +1,6 @@
 ---
 description: Run the change's tests (or some of them) through Logic Foundry and update test-report.md.
-argument-hint: [test case IDs]
+argument-hint: "[test case IDs]"
 ---
 
 Follow the `logic-fabric-dataverse:testing` skill. For the change in `logic-fabric/.active`, run the test cases

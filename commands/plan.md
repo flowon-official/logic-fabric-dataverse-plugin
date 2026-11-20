@@ -1,6 +1,6 @@
 ---
 description: Turn the approved spec into an ordered build plan and its test cases, and take the owner's approval.
-argument-hint: [approve]
+argument-hint: "[approve]"
 ---
 
 Follow the `logic-fabric-dataverse:authoring` and `logic-fabric-dataverse:testing` skills. Stage 3 (Build plan)

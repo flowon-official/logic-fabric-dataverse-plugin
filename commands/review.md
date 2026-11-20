@@ -1,6 +1,6 @@
 ---
 description: Independent review of the change's artifacts against the spec, the plan and the rule catalog; writes review.md.
-argument-hint: [artifact names, to review only those]
+argument-hint: "[artifact names, to review only those]"
 ---
 
 Stage 5 (Review) for the change in `logic-fabric/.active`, or a review of the named artifacts: $ARGUMENTS

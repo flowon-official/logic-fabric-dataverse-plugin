@@ -1,6 +1,6 @@
 ---
 description: Build the approved plan task by task - validate, save, export and test each artifact - and run the full test set.
-argument-hint: [task ID to resume from]
+argument-hint: "[task ID to resume from]"
 ---
 
 Follow the `logic-fabric-dataverse:authoring`, `logic-fabric-dataverse:artifacts`, `logic-fabric-dataverse:grammar`

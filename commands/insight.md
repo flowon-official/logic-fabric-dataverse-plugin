@@ -1,6 +1,6 @@
 ---
 description: Analyze a project's business processes - metrics, anti-patterns, design defects, standards, SLA simulation and redesign opportunities.
-argument-hint: [project] [process names...]
+argument-hint: "[project] [process names...]"
 ---
 
 Read-only; runs any time. Process analysis for the project in `workspace.yaml` (or the processes given): $ARGUMENTS

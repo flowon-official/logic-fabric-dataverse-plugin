@@ -1,6 +1,6 @@
 ---
 description: Write a business requirements document (BRD) of a Logic Fabric project from its artifacts - the as-built description, section by section.
-argument-hint: [project] [sections...]
+argument-hint: "[project] [sections...]"
 ---
 
 Read-only; runs any time. Write the business requirements document for the project in `workspace.yaml` (or the one
