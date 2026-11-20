@@ -44,6 +44,6 @@ setting them as an administrator task, done in the service connection designer.
 - Results: `<action>#request`, `<action>#response#<status>`, `<action>#response#<status>#raw`, `<action>#error`.
 - Wrap the call in `TryCatch` (or give `errorHandler`) and record the error where people see it (rule LF-011).
 - Tests never call production APIs. In development and test environments the connection itself points at the
-  sandbox: its URL and credential are set per environment by the service connection map at import (the `tools`
-  skill) or by an administrator in the designer. Never put a key, sandbox or not, in a configuration value, a
+  sandbox: its URL and credential are set per environment by the service connection map at import (the Logic Fabric CLI
+  plugin, `flowon-dynamics`) or by an administrator in the designer. Never put a key, sandbox or not, in a configuration value, a
   flow or metadata.

@@ -9,7 +9,7 @@
 // Only a later change retires the regression copies in logic-fabric/baseline/tests/.
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
-import { STAGES, changeStatusFile, parseStatus, readInput } from './workspace.mjs';
+import { STAGES, changeStatusFile, isOwnWorkspace, parseStatus, readInput } from './workspace.mjs';
 
 function deny(reason) {
   process.stdout.write(JSON.stringify({
@@ -25,7 +25,7 @@ function deny(reason) {
 const input = await readInput();
 const args = input.tool_input || {};
 
-// A test file of a change: logic-fabric/changes/<change>/tests/<file>.
+// A test file of a change in a workspace of this plugin's offering: logic-fabric/changes/<change>/tests/<file>.
 function changeTestFile(cwd, path) {
   if (!path) {
     return null;
@@ -33,7 +33,7 @@ function changeTestFile(cwd, path) {
   const file = resolve(cwd || process.cwd(), path);
   const tests = dirname(file);
   const changes = dirname(dirname(tests));
-  return basename(tests) === 'tests' && basename(changes) === 'changes' && basename(dirname(changes)) === 'logic-fabric' ? file : null;
+  return basename(tests) === 'tests' && basename(changes) === 'changes' && basename(dirname(changes)) === 'logic-fabric' && isOwnWorkspace(dirname(changes)) ? file : null;
 }
 
 const testFile = changeTestFile(input.cwd, args.file_path);

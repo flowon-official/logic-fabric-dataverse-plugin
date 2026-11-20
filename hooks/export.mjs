@@ -3,7 +3,7 @@
 // Does nothing outside a workflow repository or without an active change.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { activeChange, findWorkspace, readInput } from './workspace.mjs';
+import { activeChange, findWorkspace, isOwnWorkspace, readInput } from './workspace.mjs';
 
 // MCP tool responses arrive as content blocks; the save result is the JSON in the first text block.
 function resultOf(response) {
@@ -28,7 +28,7 @@ try {
   const input = await readInput();
   const result = resultOf(input.tool_response);
   const workspace = findWorkspace(input.cwd);
-  const change = workspace && activeChange(workspace);
+  const change = workspace && isOwnWorkspace(workspace) && activeChange(workspace);
 
   if (result && result.source && change) {
     const kind = result.kind || result.source.kind;

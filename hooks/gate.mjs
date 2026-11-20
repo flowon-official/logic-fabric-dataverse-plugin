@@ -5,7 +5,7 @@
 // A repository without logic-fabric/workspace.yaml hasn't adopted the workflow, and nothing is refused.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { activeChange, findWorkspace, readInput, readStatus, sha256 } from './workspace.mjs';
+import { OFFERING, activeChange, findWorkspace, isOwnWorkspace, readInput, readStatus, sha256, workspaceOffering } from './workspace.mjs';
 
 const WRITES = new Set(['save', 'delete', 'release', 'test']);
 
@@ -33,6 +33,10 @@ const workspace = findWorkspace(input.cwd);
 
 if (!workspace) {
   process.exit(0);
+}
+
+if (!isOwnWorkspace(workspace)) {
+  deny(`This repository's Logic Fabric workspace is for the ${workspaceOffering(workspace)} offering (offering in logic-fabric/workspace.yaml). The Logic Fabric for Dataverse plugin changes Logic Foundry only from a workspace for ${OFFERING}.`);
 }
 
 const change = activeChange(workspace);

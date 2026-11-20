@@ -19,17 +19,20 @@ You need:
 - **A Dataverse user** with Logic Fabric author privileges in the development environment.
 - **Claude Code** and **Node.js 18 or later** (the workflow's hooks run on Node.js).
 - **A git repository** for your Logic Fabric work, usually your solution's ALM repository.
+- **The Logic Fabric CLI plugin** (`flowon-dynamics`), optional: Claude uses it to export, import and deploy
+  solutions and to set up your pipelines.
 
 Your administrator also needs to set up sign-in once for your organization: see
 [Set up sign-in](#set-up-sign-in-administrators).
 
 ## Install
 
-1. Add the marketplace and install the plugin:
+1. Add the marketplace and install the plugin, and the Logic Fabric CLI plugin if you deploy with the CLI:
 
    ```bash
-   claude plugin marketplace add flowon-official/logic-fabric-dataverse-claude-plugins
+   claude plugin marketplace add flowon-official/claude-plugins
    claude plugin install logic-fabric-dataverse@flowon
+   claude plugin install flowon-dynamics@flowon
    ```
 
 2. When Claude Code asks for the **Logic Foundry MCP endpoint**, enter your server's address. You can change it
@@ -179,10 +182,10 @@ Test and production never change from Claude Code: they change through your solu
 
 ```
 logic-fabric/
-  workspace.yaml            project, solution, prefix, environments, test users
+  workspace.yaml            offering (dataverse), project, solution, prefix, environments, test users
   glossary.md               the business's terms
   baseline/tests/           regression tests from accepted changes
-  reports/                  reports from document, govern, insight and secure
+  reports/                  reports from document, govern, insights and secure
   changes/2026-11-20-route-high-value-claims/
     status.yaml             stage, approvals and their fingerprints, test and review counts
     request.md  spec.md  plan.md
@@ -202,7 +205,7 @@ These commands only read, run at any time, and write their report to `logic-fabr
 |---|---|
 | `/logic-fabric-dataverse:document` | Writes the business requirements document from the deployed artifacts |
 | `/logic-fabric-dataverse:govern` | Checks the project against the governance rules and your own |
-| `/logic-fabric-dataverse:insight` | Analyzes the business processes: defects, bottlenecks, SLA risk, redesign ideas |
+| `/logic-fabric-dataverse:insights` | Analyzes the business processes: defects, bottlenecks, SLA risk, redesign ideas |
 | `/logic-fabric-dataverse:secure` | Who can run what, attack paths, missing access rules, exposed credentials |
 
 `/logic-fabric-dataverse:agent-tools` prepares flows, blocks and processes to be tools for AI agents through Logic
@@ -215,19 +218,23 @@ You can also just ask, for example "Why does the Close Claim flow fail for CLM-0
 
 | Part | Names | Purpose |
 |---|---|---|
-| Skills | `authoring`, `artifacts`, `grammar`, `testing`, `tools` | The workflow and its rules; every artifact kind with examples; expressions; tests; the command-line tools |
-| Commands | `start`, `spec`, `plan`, `build`, `review`, `accept`, `status`, `test`, `document`, `govern`, `insight`, `secure`, `agent-tools` | The stages and the project-wide reviews |
+| Skills | `authoring`, `artifacts`, `grammar`, `testing` | The workflow and its rules; every artifact kind with examples; expressions; tests |
+| Commands | `start`, `spec`, `plan`, `build`, `review`, `accept`, `status`, `test`, `document`, `govern`, `insights`, `secure`, `agent-tools` | The stages and the project-wide reviews |
 | Agents | `reviewer`, `explorer`, `documenter`, `process-analyst`, `security-reviewer` | Read-only specialists |
 | Hooks | gate, stage, approval, context, export | Foundry changes only during a change's build, against the approved plan; stages only move forward and a change can't retire its own tests; approvals stamped with the approved file's hash; the active change's state at each prompt; each saved artifact's source written to the change folder |
 | MCP server | `foundry` | The connection to your Logic Foundry server |
 
-The plugin does not include or host a server. It only connects to yours.
+The plugin does not include or host a server. It only connects to yours. The command-line tools are in the Logic
+Fabric CLI plugin, `flowon-dynamics`.
+
+The `logic-fabric/` folder is shared with the plugins of the other Logic Fabric offerings: `workspace.yaml` names the
+offering it belongs to, and this plugin works only in a workspace for `dataverse`.
 
 ## Set up sign-in (administrators)
 
 Do this once per Microsoft Entra ID tenant.
 
-1. **Consent to the FlowOn client app** for Claude Code, application ID `2ca7b075-1954-40ec-adeb-91cb4d3f3df4` (the
+1. **Consent to the Flowon Logic Fabric for Dataverse client app** for Claude Code, application ID `2ca7b075-1954-40ec-adeb-91cb4d3f3df4` (the
    one in the plugin's `.mcp.json`). It is a multitenant public client with the redirect URI
    `http://localhost:47823/callback`.
 2. **Pre-authorize it on the Foundry server app.** In the Foundry server's app registration, open

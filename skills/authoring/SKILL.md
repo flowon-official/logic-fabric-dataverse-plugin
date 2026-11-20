@@ -28,13 +28,13 @@ gate is open and say which. **Quick change**: a change of at most two artifacts 
 combine stages 2 and 3 into one document and one approval.
 
 Project-wide, read-only commands run any time: `document` (requirements document), `govern` (rules),
-`insight` (process analysis), `secure` (security analysis).
+`insights` (process analysis), `secure` (security analysis).
 
 ## 2. The change folder
 
 ```
 logic-fabric/
-  workspace.yaml          environments, project, solution, prefix, personas
+  workspace.yaml          offering, environments, project, solution, prefix, personas
   glossary.md
   .active                 the folder name of the change in progress
   changes/<yyyy-mm-dd-slug>/
@@ -44,6 +44,10 @@ logic-fabric/
 ```
 
 Templates are in [templates/](templates/). Rules:
+
+- `workspace.yaml` names the workspace's `offering`. This plugin works only in a workspace for `dataverse` (or one
+  that names none, which `start` then marks `dataverse`). If it names another offering, such as `logic-fabric` for the
+  flagship, stop: that offering's own plugin works there, and the plugin's hooks refuse Foundry changes.
 
 - A command reads `status.yaml`, checks the gate it depends on, writes only its own files, then advances `stage`.
 - **Stages only move forward.** The only ways back are returning to spec before building, and the owner rejecting

@@ -1,7 +1,7 @@
 // UserPromptSubmit: in a repository that uses the workflow, tell Claude the active change, its stage and whether
 // the approved spec and plan still match their approval hashes, so no command needs a shell to check them.
 import { join } from 'node:path';
-import { activeChange, findWorkspace, readInput, readStatus, sha256 } from './workspace.mjs';
+import { OFFERING, activeChange, findWorkspace, isOwnWorkspace, readInput, readStatus, sha256, workspaceOffering } from './workspace.mjs';
 
 const input = await readInput();
 const workspace = findWorkspace(input.cwd);
@@ -10,10 +10,12 @@ if (!workspace) {
   process.exit(0);
 }
 
-const change = activeChange(workspace);
+const change = isOwnWorkspace(workspace) ? activeChange(workspace) : null;
 let context;
 
-if (!change) {
+if (!isOwnWorkspace(workspace)) {
+  context = `The Logic Fabric workspace here is for the ${workspaceOffering(workspace)} offering, not ${OFFERING}: the Logic Fabric for Dataverse plugin's workflow doesn't apply in this repository.`;
+} else if (!change) {
   context = 'Logic Fabric workspace: no active change.';
 } else {
   const status = readStatus(change.folder);

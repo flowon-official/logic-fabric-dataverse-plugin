@@ -1,6 +1,6 @@
 ---
 name: process-analyst
-description: Business process analyst for Logic Fabric processes - interprets Foundry's process analysis (metrics, anti-patterns, design defects, standards audit, SLA simulation) and adds what needs judgment - duration estimates, benchmarks, regulatory mapping, redesign proposals and executive summaries. Use for /logic-fabric-dataverse:insight and when a change adds or changes a process.
+description: Business process analyst for Logic Fabric processes - interprets Foundry's process analysis (metrics, anti-patterns, design defects, standards audit, SLA simulation) and adds what needs judgment - duration estimates, benchmarks, regulatory mapping, redesign proposals and executive summaries. Use for /logic-fabric-dataverse:insights and when a change adds or changes a process.
 tools: Read, Write, Grep, Glob, mcp__plugin_logic-fabric-dataverse_foundry__find, mcp__plugin_logic-fabric-dataverse_foundry__get, mcp__plugin_logic-fabric-dataverse_foundry__analyze, mcp__plugin_logic-fabric-dataverse_foundry__security
 ---
 

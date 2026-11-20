@@ -18,6 +18,21 @@ export function findWorkspace(start) {
   }
 }
 
+// The offering this plugin builds for. workspace.yaml names the offering of the workspace, so the plugins of every
+// Logic Fabric offering (the flagship's included) can share the logic-fabric/ folder convention: this plugin acts
+// only in a workspace for its own offering, or in one that names none.
+export const OFFERING = 'dataverse';
+
+export function workspaceOffering(workspace) {
+  const file = join(workspace, 'workspace.yaml');
+  return existsSync(file) ? parseStatus(readFileSync(file, 'utf8')).offering || null : null;
+}
+
+export function isOwnWorkspace(workspace) {
+  const offering = workspaceOffering(workspace);
+  return !offering || offering === OFFERING;
+}
+
 export function activeChange(workspace) {
   const marker = join(workspace, '.active');
   if (!existsSync(marker)) {
@@ -48,14 +63,15 @@ export function parseStatus(text) {
 // The stages in order; a change moves forward through them.
 export const STAGES = ['prompt', 'spec', 'plan', 'build', 'review', 'acceptance', 'accepted'];
 
-// The status.yaml of a change (logic-fabric/changes/<change>/status.yaml) as an absolute path; null for any other file.
+// The status.yaml of a change (logic-fabric/changes/<change>/status.yaml) in a workspace of this plugin's offering,
+// as an absolute path; null for any other file.
 export function changeStatusFile(cwd, path) {
   if (!path || basename(path) !== 'status.yaml') {
     return null;
   }
   const file = resolve(cwd || process.cwd(), path);
   const changes = dirname(dirname(file));
-  return basename(changes) === 'changes' && basename(dirname(changes)) === 'logic-fabric' ? file : null;
+  return basename(changes) === 'changes' && basename(dirname(changes)) === 'logic-fabric' && isOwnWorkspace(dirname(changes)) ? file : null;
 }
 
 // SHA-256 of a file's text with line endings normalized to LF, so the hash is the same whether git checked the
