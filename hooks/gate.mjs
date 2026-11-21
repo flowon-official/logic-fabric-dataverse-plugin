@@ -4,8 +4,7 @@
 // (the spec, for a quick change), no approved file (spec or plan) has changed since, and a delete is listed in one.
 // A repository without logic-fabric/workspace.yaml hasn't adopted the workflow, and nothing is refused.
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { OFFERING, activeChange, findWorkspace, isOwnWorkspace, readInput, readStatus, sha256, workspaceOffering } from './workspace.mjs';
+import { OFFERING, buildRefusal, findWorkspace, isOwnWorkspace, readInput, workspaceOffering } from './workspace.mjs';
 
 const WRITES = new Set(['save', 'delete', 'release', 'test']);
 
@@ -39,37 +38,10 @@ if (!isOwnWorkspace(workspace)) {
   deny(`This repository's Logic Fabric workspace is for the ${workspaceOffering(workspace)} offering (offering in logic-fabric/workspace.yaml). The Logic Fabric for Dataverse plugin changes Logic Foundry only from a workspace for ${OFFERING}.`);
 }
 
-const change = activeChange(workspace);
+const { refusal, change, approved } = buildRefusal(workspace, `Foundry ${tool}`, tool === 'test' ? ['build', 'review', 'acceptance'] : ['build', 'review']);
 
-if (!change) {
-  deny('There is no active Logic Fabric change. Start one with /logic-fabric-dataverse:start; Foundry writes happen only in a change\'s build stage.');
-}
-
-const status = readStatus(change.folder);
-const stage = status.stage || 'prompt';
-const allowed = tool === 'test' ? ['build', 'review', 'acceptance'] : ['build', 'review'];
-
-if (!allowed.includes(stage)) {
-  deny(`The change ${change.name} is in the ${stage} stage. Foundry ${tool} is allowed only in ${allowed.join(' or ')}. Run /logic-fabric-dataverse:status to see what is open.`);
-}
-
-// The build needs the plan approved (the spec, for a quick change). Every file that was approved, spec and plan
-// alike, must be unchanged since: the plan is built from the spec.
-const quick = String(status.quick).toLowerCase() === 'true';
-const required = quick ? 'spec' : 'plan';
-
-if (!status[`${required}_sha256`]) {
-  deny(`The ${required} of ${change.name} isn't approved. Ask the owner to approve it first.`);
-}
-
-const approved = ['spec', 'plan']
-  .filter(gate => status[`${gate}_sha256`])
-  .map(gate => ({ name: `${gate}.md`, file: join(change.folder, `${gate}.md`), hash: status[`${gate}_sha256`].toLowerCase() }));
-
-for (const { name, file, hash } of approved) {
-  if (sha256(file) !== hash) {
-    deny(`${name} changed since it was approved. Ask the owner to approve it again (an amendment) before building.`);
-  }
+if (refusal) {
+  deny(refusal);
 }
 
 if (tool === 'delete') {

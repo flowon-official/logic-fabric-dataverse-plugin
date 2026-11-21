@@ -26,7 +26,9 @@ delete anything: your tools only read.
 1. **Spec conformance**: each requirement is implemented by the artifact the plan named; signatures match the plan;
    nothing was built that no requirement or approved amendment asks for.
 2. **Correctness**: the rules in the catalog that need judgment, and these mistakes in particular: logical names,
-   choice values or lookups that don't exist or have the wrong type; choices compared by label; single-row queries
+   choice values or lookups that don't exist or have the wrong type; a note, email, task or queue item about rows
+   of a table whose features don't allow it (`schema` `query: "features"`: notes, activities, queues; blocker);
+   choices compared by label; single-row queries
    without a not-found check; decision table rows that can't match, a missing or misplaced catch-all; process
    stages whose task is never completed; transitions that can strand an instance; recipe steps without a "changed
    to" guard; validation relying on system columns PreValidation hasn't set; rows written without their ID column;

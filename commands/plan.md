@@ -15,12 +15,15 @@ Otherwise:
 1. Check `status.yaml`: `stage: plan`, and the context hook reports that `spec.md` matches its approval. If the
    spec changed since approval, say so and stop.
 2. Write `plan.md` from the template: the spec's hash (`spec_sha256`), the summary for approval, then one task per artifact or
-   schema component, in this order: schema (then publish customizations), configurations, localized resources and
+   schema component, in this order: for a new project (`new:` in `workspace.yaml`), its solution (with its publisher,
+   existing or new) and then the project; schema (then publish customizations), configurations, localized resources and
    service connections (credentials are an administrator task), blocks (leaves first), flows (callees first), event
    definitions, processes (draft), event handlers, and **go-live tasks last** (enable recipes, publish processes,
    enable schedules, expose agent tools).
 3. Each task: inputs and outputs, the `Precondition:` line (entry point with its policy, condition and code, or
-   internal and why), dependencies, test case IDs, done-when. Changes to existing artifacts list their consumers
+   internal and why), dependencies, test case IDs, done-when. A task Foundry can't do (security roles) says
+   `Tool: flowon-dynamics` with the command and its preview, so the owner approves it with the plan; the build still
+   asks before running it. Changes to existing artifacts list their consumers
    (`get` with dependencies) and add those consumers' tests to the regression set. Every deletion gets its own line
    in the summary: `Delete <kind> <name>: <reason>`, a task that checks nothing depends on it (`get` with
    dependencies), an `absent` test, and a task retiring the regression tests in `logic-fabric/baseline/tests/`

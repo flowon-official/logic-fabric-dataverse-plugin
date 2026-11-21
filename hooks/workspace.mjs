@@ -60,6 +60,76 @@ export function parseStatus(text) {
   return status;
 }
 
+// Why a change to Dataverse can't be made now, or no refusal when it can: the active change is in one of the
+// allowed stages, its plan (its spec, for a quick change) is approved, and no approved file, spec or plan alike, has
+// changed since (the plan is built from the spec). `what` names the change for the reasons, such as "Foundry save".
+export function buildRefusal(workspace, what, allowed = ['build', 'review']) {
+  const change = activeChange(workspace);
+
+  if (!change) {
+    return { refusal: `There is no active Logic Fabric change. Start one with /logic-fabric-dataverse:start; ${what} is allowed only in a change's build stage.` };
+  }
+
+  const status = readStatus(change.folder);
+  const stage = status.stage || 'prompt';
+
+  if (!allowed.includes(stage)) {
+    return { refusal: `The change ${change.name} is in the ${stage} stage. ${what} is allowed only in ${allowed.join(' or ')}. Run /logic-fabric-dataverse:status to see what is open.` };
+  }
+
+  const quick = String(status.quick).toLowerCase() === 'true';
+  const required = quick ? 'spec' : 'plan';
+
+  if (!status[`${required}_sha256`]) {
+    return { refusal: `The ${required} of ${change.name} isn't approved. Ask the owner to approve it first.` };
+  }
+
+  const approved = ['spec', 'plan']
+    .filter(gate => status[`${gate}_sha256`])
+    .map(gate => ({ name: `${gate}.md`, file: join(change.folder, `${gate}.md`), hash: status[`${gate}_sha256`].toLowerCase() }));
+
+  for (const { name, file, hash } of approved) {
+    if (sha256(file) !== hash) {
+      return { refusal: `${name} changed since it was approved. Ask the owner to approve it again (an amendment) before building.` };
+    }
+  }
+
+  return { refusal: null, change, approved };
+}
+
+// The environments in workspace.yaml: name -> { url, role, connection }. connection is the name of the environment
+// variable that holds the environment's connection string, never the string itself.
+export function readEnvironments(workspace) {
+  const file = join(workspace, 'workspace.yaml');
+  const environments = {};
+  let inside = false;
+  let current = null;
+
+  for (const line of existsSync(file) ? readFileSync(file, 'utf8').split(/\r?\n/) : []) {
+    if (/^environments:\s*(#.*)?$/.test(line)) {
+      inside = true;
+      continue;
+    }
+    if (!inside || /^\s*(#.*)?$/.test(line)) {
+      continue;
+    }
+    if (/^\S/.test(line)) {
+      break;
+    }
+    const name = /^ {2}([\w-]+):\s*(#.*)?$/.exec(line);
+    if (name) {
+      current = environments[name[1]] = {};
+      continue;
+    }
+    const setting = /^ {4}([\w-]+):\s*(.*?)\s*(#.*)?$/.exec(line);
+    if (setting && current) {
+      current[setting[1]] = setting[2].replace(/^["']|["']$/g, '');
+    }
+  }
+
+  return environments;
+}
+
 // The stages in order; a change moves forward through them.
 export const STAGES = ['prompt', 'spec', 'plan', 'build', 'review', 'acceptance', 'accepted'];
 

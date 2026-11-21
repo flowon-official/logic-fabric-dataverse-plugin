@@ -13,6 +13,9 @@
 | Table | Column | Type | New or existing | Purpose |
 |---|---|---|---|---|
 
+Table features (from how each table is used; see the schema reference): <table: notes (REQ-n writes notes about
+it), activities (REQ-n emails about it), queues, audit, ... or none>
+
 Choice values: <table.column: value = label, ...>
 
 ## 4. Requirements

@@ -81,7 +81,8 @@ command to run.
 
 The first time, Claude creates `logic-fabric/workspace.yaml` in your repository: the Logic Fabric project, its
 solution and publisher prefix, your environments, and the test users (personas) that check who may run what. It
-asks you only which project.
+asks you only which project. For a new project, it also asks for the solution and its publisher, an existing one or a
+new one with its prefix, and the build plan creates them first.
 
 Claude then reads what already exists: the artifacts the request touches, the tables and choices involved, the teams
 and roles. It writes `request.md` with the request, what exists and could be reused, and its questions, and asks
@@ -172,6 +173,9 @@ The plugin's hooks keep the workflow in place, whatever Claude is asked:
 - Each approval is stamped with a fingerprint of the file you approved. If the spec or plan is edited afterwards,
   building stops until you approve it again. Ticking off a task doesn't count as an edit.
 - A delete goes through only when the approved plan names it.
+- The few tasks Foundry can't do, such as creating security roles with the Flowon command-line tool, Claude
+  prepares, previews and runs itself after asking you: Claude Code shows you each such command for approval. They
+  follow the same rules as Foundry changes, and a command aimed at a test or production environment is refused.
 - Stages only move forward, except when you reject at acceptance, and a change can't retire its own tests to make
   them pass.
 - At every prompt, Claude is told the active change, its stage and whether its approvals still hold.
@@ -221,7 +225,7 @@ You can also just ask, for example "Why does the Close Claim flow fail for CLM-0
 | Skills | `authoring`, `artifacts`, `grammar`, `testing` | The workflow and its rules; every artifact kind with examples; expressions; tests |
 | Commands | `start`, `spec`, `plan`, `build`, `review`, `accept`, `status`, `test`, `document`, `govern`, `insights`, `secure`, `agent-tools` | The stages and the project-wide reviews |
 | Agents | `reviewer`, `explorer`, `documenter`, `process-analyst`, `security-reviewer` | Read-only specialists |
-| Hooks | gate, stage, approval, context, export | Foundry changes only during a change's build, against the approved plan; stages only move forward and a change can't retire its own tests; approvals stamped with the approved file's hash; the active change's state at each prompt; each saved artifact's source written to the change folder |
+| Hooks | gate, dataverse, stage, approval, context, export | Foundry changes only during a change's build, against the approved plan; other commands that change Dataverse under the same rules, asked for each time and never for test or production; stages only move forward and a change can't retire its own tests; approvals stamped with the approved file's hash; the active change's state at each prompt; each saved artifact's source written to the change folder |
 | MCP server | `foundry` | The connection to your Logic Foundry server |
 
 The plugin does not include or host a server. It only connects to yours. The command-line tools are in the Logic

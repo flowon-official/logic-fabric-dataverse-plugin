@@ -27,8 +27,11 @@ Patterns you will use most are in [the expressions cheat sheet](../artifacts/ref
 - **Choice constant**: `{"type": "const", "tc": "OptionSet", "value": {"optionSetValue": 100000001,
   "optionSetLogicalName": "<from schema>", "isGlobal": false, "isTwoOptions": false}}`.
 - **Context**: `{"type": "context", "var": "<variable>", "prop": ["<column>", ...]}`.
-- **Function**: `{"type": "<name>", "args": [<expression>, ...]}`, for example
-  `{"type": "addDays", "args": [{"type": "utcNow"}, {"type": "const", "tc": "Integer", "value": 2}]}`.
+- **Function**: `{"type": "<name>", "args": [<expression>, ...]}` or `{"type": "<name>", "arg": <expression>}`,
+  for example `{"type": "addDays", "args": [{"type": "utcNow"}, {"type": "const", "tc": "Integer", "value": 2}]}`.
+  Which of the two is fixed per function and can't be guessed from what the function does (`toInteger` takes
+  `args`, `isNumeric` takes `arg`): look it up in the functions table of the
+  [expressions cheat sheet](../artifacts/reference/expressions.md) every time.
 
 ## Context by host
 

@@ -5,15 +5,48 @@ with `schema`. Every component is created in the project's solution with the pub
 
 | Kind | `name` | Definition (`metadata`) |
 |---|---|---|
-| `table` | `<prefix>_<name>` | `displayName`, `pluralName`, `description`, `ownership` (`user`/`organization`), `primaryName` {`name`, `displayName`, `maxLength`}, `columns` [ ... ] |
+| `table` | `<prefix>_<name>` | `displayName`, `pluralName`, `description`, `ownership` (`user`/`organization`), `primaryName` {`name`, `displayName`, `maxLength`}, `features` {`notes`, `activities`, `queues`, `audit`, `changeTracking`, `connections`, `duplicateDetection`, `quickCreate`: true/false}, `columns` [ ... ] |
 | `column` | `<prefix>_<name>`, with `options.table` | `type` (`text`, `memo`, `integer`, `decimal`, `currency`, `boolean`, `date`, `datetime`, `choice`, `choices`, `lookup`), `displayName`, `description`, `required` (`none`/`recommended`/`required`), `maxLength`, `precision`, `min`, `max`, `trueLabel`/`falseLabel`, `choice` {`global`: name} or {`options`: [{`value`, `label`}]}, `target` and `relationshipName` (lookup), `cascade` |
 | `choice` | `<prefix>_<name>` | a global choice: `displayName`, `description`, `options` [{`value`, `label`}] |
 | `relationship` | `<prefix>_<name>` | many-to-many: `referenced`, `referencing`, `intersect` (one-to-many: save a lookup column) |
-| `record` | a label, with `options.table` | reference rows: `key` (an ID or {column: value}), `values` {column: value, `{"choice": n}`, `{"money": n}`, `{"lookup": {"table", "id"}}`} |
+| `record` | a label, with `options.table` | reference rows: `key` (an ID or {column: value}), `values` {column: value}. Each value takes its column's type: numbers for number and currency columns (`{"money": n}` also works), `"2026-01-01"` for a date, `"2026-01-01T09:00:00Z"` for a date and time, `{"choice": n}` or the choice's label, `[n, ...]` for a multi-choice, `{"lookup": {"table", "id"}}` (or the ID, for a lookup to one table) |
+
+Foundry refuses a setting it doesn't know instead of ignoring it, and names the right one.
+
+## Table features: decide them from how the table is used
+
+A table only allows what its features allow, and Dataverse refuses the rest at run time, for example "Creating
+Entity with an invalid parent. Entity: Annotation" for a note about a row of a table without notes. Work the
+features out when you design the table, from every requirement that touches it, and put them in the spec's data
+model and the table's `features`:
+
+| When the spec or a design ... | the table needs |
+|---|---|
+| writes a note or attachment about a row (`annotation` with `objectid`), or users attach documents | `notes` |
+| sends an email, creates a task, appointment or phone call about a row (the activity's regarding is the row), or a process assigns tasks for it | `activities` |
+| routes rows through queues (`Queue` action, queue items, a work queue) | `queues` |
+| needs an audit trail (approvals, money, decisions, compliance) | `audit` (auditing also has to be on for the environment) |
+| synchronizes rows out to another system | `changeTracking` |
+| relates rows to other rows with connections | `connections` |
+
+Notes and activities can't be turned off once on. For an **existing** table the change uses this way, read its
+features with `schema` (`query: "features"`, `table`) and, when one is missing, plan a task that saves the table
+with that feature on: it's a data model change that goes in the spec.
 
 Rules:
 
-- Save the schema tasks first, then `release` `action: "publishCustomizations"`.
+- **One schema save at a time, never in parallel.** Dataverse applies one customization at a time and refuses a
+  second one while the first runs ("Cannot start another [EntityCustomization]"). Foundry queues its own saves and
+  retries briefly, but parallel calls still wait or fail.
+- **A table with many columns comes back in parts.** Dataverse takes seconds per column and a tool call has about a
+  minute, so a table save stops starting new columns after 40 seconds and returns the rest in `pending` with a
+  `note`. Save each pending column with kind `column` and `options.table`, one call at a time. Saving the whole
+  table again also works: columns already saved and unchanged are skipped.
+- **After a timeout or a "busy" error, read before you save again.** The change may have gone through: read the
+  table with `schema` (`query: "table"`), then save only what is missing.
+- Save the schema tasks first, then `release` `action: "publishCustomizations"`. Publishing often takes Dataverse
+  several minutes: Foundry waits up to 40 seconds and otherwise returns the system job. Carry on with tasks that
+  don't need it and check it with `release` `action: "publishStatus"` and `options.jobId` before a go-live task.
 - A type change or a shorter length that could lose data is refused unless the plan line approves it and you pass
   `options.allowDataLoss`.
 - Deleting a table, column, choice (or one value with `options.value`), relationship or record needs an approved

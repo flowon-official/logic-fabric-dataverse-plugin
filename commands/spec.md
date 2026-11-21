@@ -14,7 +14,9 @@ Otherwise:
 
 1. Check `status.yaml`: the stage must be `spec` (no blocking question open in `request.md`).
 2. Write `spec.md` from the template, using the business's words and Logic Fabric terms:
-   - the data model, with every table, column and choice value checked with `schema` or declared new;
+   - the data model, with every table, column and choice value checked with `schema` or declared new, and each
+     table's features worked out from how the requirements use it (notes, activities, queues, audit: the schema
+     reference's table), checked with `schema` `query: "features"` for existing tables;
    - one requirement per behaviour (`REQ-n`), each naming its artifact kind and proposed `Area_VerbNoun` name;
    - an **access statement** for every entry point (who may run it, under which condition, what a refused user is
      told), and "internal, called only by ..." for the rest;

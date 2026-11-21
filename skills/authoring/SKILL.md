@@ -67,6 +67,10 @@ Templates are in [templates/](templates/). Rules:
   and no approved file has changed since. It refuses a `delete` unless an approved file has a line naming the
   target, written as `Delete <kind> <name>: <reason>` in the plan's summary. Don't work around it: never move `stage` or edit an approval to get past it.
   Something the approved plan doesn't cover is a plan amendment (approved again) during the build, or a new change.
+- The **Dataverse hook** applies the same rules to commands that change Dataverse outside Foundry (the
+  `flowon-dynamics` tool's imports and other writing commands, the Flowon PowerShell module, scripts with a
+  connection string or Web API writes), refuses them for test and production environments, and stops each one for
+  the user's approval. See "Work Foundry can't do" below.
 - The **export hook** writes each saved artifact's canonical source to `artifacts/<kind>/<name>.json`.
 
 ## 3. Logic Foundry tools
@@ -93,6 +97,34 @@ Kinds: `project`, `solution`, `logicBlock`, `logicFlow`, `logicRecipe`, `busines
 
 Pass the change ID (`changeId`) on every write. Read an artifact's `version` with `get` and pass it as
 `ifVersion` when you update something you didn't create in this build.
+
+A new project is built from nothing in this order, as the plan's first tasks: `save` `kind: "solution"` by its
+unique name (no project; `options.publisher` names an existing publisher by unique name or prefix, or describes a
+new one as `{ "name", "prefix", "title" }`), then `save` `kind: "project"` with `options.solution`. Validate each
+first. Never create them before the build, and never name another project to get past a missing one.
+
+### Work Foundry can't do
+
+Do everything Foundry can do through Foundry: reference rows are `save` `kind: "record"` (dates and numbers
+included), never a script. A few tasks need the `flowon-dynamics` command-line tool instead, such as security roles
+(`import -sf security.xml`; Foundry's `security` only reads them). **Never hand the user a command or a script to
+run themselves.** Do the task with their approval:
+
+1. Prepare it: the file the command reads and the exact command. For roles, start from `export-security` of a
+   similar role, and preview with `import -sf security.xml --security-what-if` (it changes nothing).
+2. Ask the user in one question (`AskUserQuestion`): what will be created or changed, in which environment
+   (development only), the preview's result, and the command. Offer approve and don't.
+3. On approval, run it yourself. The plugin's Dataverse hook shows the command in Claude Code's approval prompt;
+   it refuses commands outside the build stage and against test or production environments.
+4. The command reads the connection string from the variable `workspace.yaml` names for the environment
+   (`connection`), passed as `"$env:<VARIABLE>"` (PowerShell) or `"$<VARIABLE>"` (bash). Never read, print or copy
+   its value. If the variable isn't set, ask the user to set it by typing `! $env:<VARIABLE> = "..."` in the prompt.
+5. Record the command and its result in `build-log.md`. If the user declines, or a permission check refuses the
+   command, mark the task blocked in `plan.md` with the reason and go on with the next one: never look for another
+   way around it.
+
+Security roles created this way aren't in the project's solution: they move to test and production as
+`security.xml` (`export-security` here, `import -sf` there) in the pipeline. Commit the file with the change.
 
 ## 4. What you must know before writing metadata
 

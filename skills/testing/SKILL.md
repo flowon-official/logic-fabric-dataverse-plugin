@@ -36,7 +36,9 @@ teardown: delete-created
   carries `TST-{run}`.
 - Values: text, numbers, `true`/`false`, `{choice: n}`, `{money: n}`, `{lookup: {table, id}}`, `"{alias}"` for a
   lookup to a fixture.
-- Assertions: `output` (equals; numbers compare to two decimals for Currency), `error` (`code`, `message` contains),
+- Assertions: `output` (equals; numbers compare to two decimals for Currency; dates by value, so `"2026-11-27"`
+  matches any time that day and `"2026-11-27T10:00:00Z"` the same instant: never write .NET's
+  `"2026-11-27T00:00:00.0000000"` into a case), `error` (`code`, `message` contains),
   `records` (`ref` or `table` + `where`; `columns` equal, `count`, `exists: false`, `within` for asynchronous work),
   `absent: true` (the target artifact no longer exists; nothing is run). A missing required input or a value of the
   wrong type fails the run with the platform's message: assert it with `error: { message: <input name> }`.

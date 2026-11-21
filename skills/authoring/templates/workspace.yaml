@@ -2,20 +2,25 @@
 offering: dataverse                       # the Logic Fabric offering this workspace builds for; each offering's plugin works only in its own
 project: InsuranceClaimsManagement        # the Logic Fabric project changes are built in
 solution: InsuranceClaims                 # its solution (unique name)
-prefix: fodemos                           # the solution publisher's prefix
+publisher: FlowonDemos                    # the solution's publisher (unique name)
+prefix: fodemos                           # the publisher's customization prefix
+# new: [project, solution, publisher]     # what doesn't exist yet; the first change's plan creates it (removed once built)
 environments:
   development:
     url: https://<org>.crm.dynamics.com
     role: development                     # builds and tests run only here
     tests_allowed: true
+    connection: FLOWON_DEV_CONNECTION_STRING  # the environment variable holding its connection string (never the string)
   test:
     url: https://<org-test>.crm.dynamics.com
     role: test                            # reached only through solutions and the pipeline
     tests_allowed: true
+    connection: UAT_CONNECTION_STRING     # named so the plugin can refuse commands that use it
   production:
     url: https://<org-prod>.crm.dynamics.com
     role: production
     tests_allowed: false
+    connection: PROD_CONNECTION_STRING
 personas:                                 # test users for precondition tests (runAs)
   supervisor: { user: test.supervisor@<domain>, roles: [Claims Supervisor] }
   adjuster:   { user: test.adjuster@<domain>, teams: [General Adjusters] }

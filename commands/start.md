@@ -7,8 +7,16 @@ Follow the `logic-fabric-dataverse:authoring` skill. This is stage 1 (Prompt) fo
 
 1. Read `logic-fabric/workspace.yaml`. If it doesn't exist, create it from the skill's
    `templates/workspace.yaml`, asking the user only for the project (list them with `find` `kinds: ["project"]`),
-   and fill the solution and prefix from `get` `kind: "project"`. If it exists without `offering`, add
-   `offering: dataverse`; if it names another offering, stop and say that offering's own plugin works in this repository.
+   and fill the solution, publisher and prefix from `get` `kind: "project"` and `get` `kind: "solution"`. If it
+   exists without `offering`, add `offering: dataverse`; if it names another offering, stop and say that
+   offering's own plugin works in this repository.
+
+   **A new project.** When the user's project doesn't exist yet, ask in one message for its name, its solution
+   (an existing unmanaged one from `find` `kinds: ["solution"]`, or a new unique name) and, for a new solution, its
+   publisher: an existing one (list them with `lookup`, FetchXML on `publisher` with `uniquename` and
+   `customizationprefix`) or a new one with a unique name and a prefix (2 to 8 lowercase letters and digits).
+   Record them in `workspace.yaml`, with `new:` listing what doesn't exist yet (`project`, `solution`,
+   `publisher`). Create nothing now: the plan's first tasks create them in the build.
 2. Create `logic-fabric/changes/<yyyy-mm-dd>-<slug>/` with `status.yaml` (stage `prompt`) from the template, and
    write the folder name to `logic-fabric/.active`.
 3. Discover, read-only: what the project has (`find`), the artifacts the request touches (`get`, with

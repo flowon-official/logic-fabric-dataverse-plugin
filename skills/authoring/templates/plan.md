@@ -10,9 +10,16 @@
 - Goes live in: <task IDs> · Risks: <...>
 
 ## Tasks
-- [ ] T-01 Create table `<prefix>_<name>` (schema)                                REQ-1
-      Definition: <columns>
-      Done when: validates, saved, published (T-02)
+- [ ] T-01 Create solution `<solution>`                                          (a new project only)
+      Publisher: `<publisher>` (existing), or new: `<publisher>` with prefix `<prefix>`
+      Done when: validates, saved; `get` of the solution shows the publisher and prefix
+
+- [ ] T-02 Create project `<project>` in solution `<solution>`                   (a new project only)
+      Done when: validates, saved; `new:` removed from workspace.yaml
+
+- [ ] T-03 Create table `<prefix>_<name>` (schema)                                REQ-1
+      Definition: <columns>; features: <notes, activities, ... from how it is used, or none>
+      Done when: validates, saved, published (T-04)
 
 - [ ] T-07 Create logic block `<Area_VerbNoun>` (<block type>)                   REQ-3
       Inputs:  <Name (Type, required)>, ...
