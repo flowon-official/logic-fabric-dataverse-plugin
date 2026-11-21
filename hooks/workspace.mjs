@@ -160,14 +160,16 @@ export function changeStatusFile(cwd, path) {
 }
 
 // SHA-256 of a file's text with line endings normalized to LF, so the hash is the same whether git checked the
-// file out with CRLF or LF, and with task checkboxes cleared, so ticking a task in the approved plan (- [ ] to
-// - [x]) isn't a change to what was approved. approval.mjs stamps approvals with it; gate.mjs and context.mjs
+// file out with CRLF or LF, with task checkboxes cleared, so ticking a task in the approved plan (- [ ] to - [x])
+// isn't a change to what was approved, and without the indented "Blocked: <reason>" lines the build adds under a
+// task it can't finish, which are progress too. approval.mjs stamps approvals with it; gate.mjs and context.mjs
 // compare against it.
 export function sha256(file) {
   if (!existsSync(file)) {
     return null;
   }
-  const text = readFileSync(file, 'utf8').replace(/\r\n/g, '\n').replace(/^(\s*[-*+] )\[[xX]\]/gm, '$1[ ]');
+  const text = readFileSync(file, 'utf8').replace(/\r\n/g, '\n').replace(/^(\s*[-*+] )\[[xX]\]/gm, '$1[ ]')
+    .replace(/^[ \t]+Blocked:.*\n?/gm, '');
   return createHash('sha256').update(text).digest('hex');
 }
 

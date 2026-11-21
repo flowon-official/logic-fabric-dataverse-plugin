@@ -218,14 +218,28 @@ as a small change of its own.
 
 You can also just ask, for example "Why does the Close Claim flow fail for CLM-001014?".
 
+## The dashboard
+
+`/logic-fabric-dataverse:dashboard` writes `logic-fabric/dashboard.html`, one page you open in any browser, with no
+network needed:
+
+- every change as a card: its stage, tasks done, tests, review findings, whether the spec and plan still match their
+  approvals, and what needs you;
+- for each change, its requirements traced to their acceptance criteria, tasks, tests and artifacts; the request,
+  spec, build log, review and acceptance; the plan's tasks; the test cases with their last result; and the source of
+  every saved artifact, with a link to open it in the development environment.
+
+The plugin rewrites the file at the end of every turn that changed `logic-fabric/`, once you've run the command. It's
+generated, so the command adds it to `logic-fabric/.gitignore`.
+
 ## What's in the plugin
 
 | Part | Names | Purpose |
 |---|---|---|
 | Skills | `authoring`, `artifacts`, `grammar`, `testing` | The workflow and its rules; every artifact kind with examples; expressions; tests |
-| Commands | `start`, `spec`, `plan`, `build`, `review`, `accept`, `status`, `test`, `document`, `govern`, `insights`, `secure`, `agent-tools` | The stages and the project-wide reviews |
+| Commands | `start`, `spec`, `plan`, `build`, `review`, `accept`, `status`, `dashboard`, `test`, `document`, `govern`, `insights`, `secure`, `agent-tools` | The stages, where changes stand, and the project-wide reviews |
 | Agents | `reviewer`, `explorer`, `documenter`, `process-analyst`, `security-reviewer` | Read-only specialists |
-| Hooks | gate, dataverse, stage, approval, context, export | Foundry changes only during a change's build, against the approved plan; other commands that change Dataverse under the same rules, asked for each time and never for test or production; stages only move forward and a change can't retire its own tests; approvals stamped with the approved file's hash; the active change's state at each prompt; each saved artifact's source written to the change folder |
+| Hooks | gate, dataverse, stage, approval, context, export, dashboard | Foundry changes only during a change's build, against the approved plan; other commands that change Dataverse under the same rules, asked for each time and never for test or production; stages only move forward and a change can't retire its own tests; approvals stamped with the approved file's hash; the active change's state at each prompt; each saved artifact's source and link written to the change folder; the dashboard kept current |
 | MCP server | `foundry` | The connection to your Logic Foundry server |
 
 The plugin does not include or host a server. It only connects to yours. The command-line tools are in the Logic

@@ -13,7 +13,8 @@ and `logic-fabric-dataverse:testing` skills. Stage 4 (Build) for the change in `
       for its kind (`reference` `topic: "rules"`).
    2. Write the metadata, including the task's precondition.
    3. `validate`. Fix every error at its `path` and validate again, at most three times; then mark the task
-      blocked in `plan.md` with the last error and stop.
+      blocked in `plan.md` and stop: leave its box unticked and add `Blocked: <the last error>` as the first line
+      under the task line (the dashboard counts these). Remove that line when the task is done.
    4. `save` with `changeId` (the change folder name). The export hook writes the source to `artifacts/`. Give the
       user the result's `url`, where they open what was saved: an artifact in its Logic Fabric designer, a table or
       solution in the Power Apps maker portal, a reference row in Dataverse.

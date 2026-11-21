@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Logic Fabric changes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a board of change cards under a stage rail; a change opens as its own page with tabs and a contents column. */
+:root {
+  --bg: #f4f6fa; --surface: #ffffff; --surface-2: #eef2f8; --line: #dde3ee; --line-strong: #c5cddc;
+  --text: #1d2638; --muted: #5b6781; --heading: #0f172a;
+  --accent: #2563d9; --accent-soft: #e8f0ff; --accent-ink: #143a82;
+  --ok: #12825a; --ok-soft: #e1f4ec; --warn: #9a6205; --warn-soft: #fbf0d9; --bad: #c13434; --bad-soft: #fbe6e6;
+  --code-bg: #f1f4f9; --code-key: #1d4ed8; --code-str: #0d7350; --code-num: #9a5207; --code-lit: #8f27a3;
+  --font: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', 'Cascadia Code', 'Cascadia Mono', ui-monospace, Consolas, monospace;
+  --radius: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10141e; --surface: #161b28; --surface-2: #1b2131; --line: #283044; --line-strong: #384259;
+    --text: #e6eaf2; --muted: #a0aac0; --heading: #ffffff;
+    --accent: #5b9bff; --accent-soft: #12284f; --accent-ink: #d3e4ff;
+    --ok: #4fd8a6; --ok-soft: rgb(16 185 129 / 0.16); --warn: #f2b65a; --warn-soft: rgb(242 182 90 / 0.14); --bad: #ff8080; --bad-soft: rgb(255 128 128 / 0.14);
+    --code-bg: #1b2131; --code-key: #8ab8ff; --code-str: #5fdcae; --code-num: #f2b65a; --code-lit: #d9a2ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10141e; --surface: #161b28; --surface-2: #1b2131; --line: #283044; --line-strong: #384259;
+  --text: #e6eaf2; --muted: #a0aac0; --heading: #ffffff;
+  --accent: #5b9bff; --accent-soft: #12284f; --accent-ink: #d3e4ff;
+  --ok: #4fd8a6; --ok-soft: rgb(16 185 129 / 0.16); --warn: #f2b65a; --warn-soft: rgb(242 182 90 / 0.14); --bad: #ff8080; --bad-soft: rgb(255 128 128 / 0.14);
+  --code-bg: #1b2131; --code-key: #8ab8ff; --code-str: #5fdcae; --code-num: #f2b65a; --code-lit: #d9a2ff;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--text); font: 14px/1.55 var(--font);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+}
+a { color: var(--accent); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+code, pre, .mono { font-family: var(--mono); font-size: 0.86em; }
+.wrap { max-width: 1320px; margin: 0 auto; }
+h1, h2, h3, h4 { color: var(--heading); text-wrap: balance; line-height: 1.25; margin: 0; }
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; padding-block: 28px 18px; }
+.top h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; color: var(--muted); font-size: 13px; }
+.facts b { color: var(--text); font-weight: 600; }
+.stamp { font-size: 12.5px; color: var(--muted); text-align: right; }
+.stamp code { background: var(--surface-2); padding: 1px 6px; border-radius: 5px; }
+
+/* Stage rail */
+.rail { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.rail button { position: relative; border: 0; background: none; padding: 12px 14px 12px; text-align: left; cursor: pointer; border-right: 1px solid var(--line); }
+.rail button:last-child { border-right: 0; }
+.rail button:hover { background: var(--surface-2); }
+.rail button[aria-pressed="true"] { background: var(--accent-soft); }
+.rail .label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.rail .count { display: block; font-size: 24px; font-weight: 700; color: var(--heading); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.rail .count.zero { color: var(--line-strong); }
+.rail .gate { position: absolute; right: -6px; top: 50%; width: 11px; height: 11px; transform: translateY(-50%) rotate(45deg); background: var(--surface); border: 1.5px solid var(--accent); z-index: 1; }
+.rail-note { font-size: 12px; color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 8px; }
+.rail-note i { display: inline-block; width: 9px; height: 9px; transform: rotate(45deg); border: 1.5px solid var(--accent); }
+
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 22px 0 14px; }
+.search { flex: 1 1 260px; max-width: 420px; position: relative; }
+.search input { width: 100%; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+.chip-btn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.chip-btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.count-note { font-size: 13px; color: var(--muted); margin-left: auto; }
+
+/* Cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 16px; }
+.card { display: flex; flex-direction: column; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; cursor: pointer; text-align: left; transition: border-color .15s, box-shadow .15s; min-width: 0; }
+.card:hover { border-color: var(--line-strong); box-shadow: 0 4px 18px rgb(20 40 80 / 0.07); }
+.card-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.card .id { font-family: var(--mono); font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere; }
+.card h3 { font-size: 16.5px; font-weight: 650; margin-top: 3px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--accent-soft); color: var(--accent-ink); }
+.pill.accepted { background: var(--ok-soft); color: var(--ok); }
+.pill.quiet { background: var(--surface-2); color: var(--muted); }
+.badge-active { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-left: 6px; }
+.track { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.track span { height: 5px; border-radius: 3px; background: var(--surface-2); }
+.track span.done { background: var(--accent); opacity: .45; }
+.track span.now { background: var(--accent); }
+.track.accepted span { background: var(--ok); opacity: 1; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.stat .k { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+.stat .v { font-size: 15px; font-weight: 650; color: var(--heading); font-variant-numeric: tabular-nums; }
+.stat .v small { font-size: 12px; font-weight: 500; color: var(--muted); }
+.bar { height: 4px; border-radius: 3px; background: var(--surface-2); margin-top: 5px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); }
+.bar.ok i { background: var(--ok); }
+.approvals { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; }
+.ap { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.ap .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); }
+.ap.valid .dot { background: var(--ok); }
+.ap.changed .dot, .ap.missing .dot { background: var(--bad); }
+.ap.changed { color: var(--bad); }
+.alerts { display: flex; flex-direction: column; gap: 4px; }
+.alert { font-size: 12.5px; padding: 5px 10px; border-radius: 6px; border-left: 3px solid; }
+.alert.bad { background: var(--bad-soft); color: var(--bad); border-color: var(--bad); }
+.alert.warn { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+.alert.ask { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent); }
+.kinds { display: flex; flex-wrap: wrap; gap: 5px; }
+.kind { font-size: 11.5px; padding: 1px 8px; border-radius: 5px; background: var(--surface-2); color: var(--muted); }
+.kind b { color: var(--text); font-weight: 650; }
+.card-foot { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; margin-top: auto; }
+.next { font-size: 13px; color: var(--text); }
+.next b { font-weight: 600; }
+.empty { padding: 40px; text-align: center; color: var(--muted); border: 1px dashed var(--line-strong); border-radius: var(--radius); }
+
+/* A change */
+.back { display: inline-flex; align-items: center; gap: 6px; margin-top: 22px; font-size: 13px; text-decoration: none; }
+.change-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; align-items: flex-start; padding-block: 10px 18px; }
+.change-head h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; margin-top: 4px; }
+.steps { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.step { padding: 10px 12px; border-right: 1px solid var(--line); position: relative; min-width: 0; }
+.step:last-child { border-right: 0; }
+.step .name { font-size: 12.5px; font-weight: 650; color: var(--muted); }
+.step .when { font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere; }
+.step.done .name { color: var(--text); }
+.step.now { background: var(--accent-soft); }
+.step.now .name { color: var(--accent-ink); }
+.step.done::before, .step.now::before { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 3px; background: var(--accent); opacity: .5; border-radius: 3px 3px 0 0; }
+.step.now::before { opacity: 1; }
+.steps.accepted .step::before { background: var(--ok); opacity: 1; }
+.step .gate { position: absolute; right: -6px; top: 14px; width: 11px; height: 11px; transform: rotate(45deg); background: var(--surface); border: 1.5px solid var(--line-strong); z-index: 1; }
+.step .gate.ok { border-color: var(--ok); background: var(--ok); }
+.step .gate.bad { border-color: var(--bad); background: var(--bad); }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-top: 20px; overflow-x: auto; scrollbar-width: thin; }
+.tab { border: 0; background: none; padding: 10px 14px; cursor: pointer; font-weight: 600; font-size: 13.5px; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; }
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tab .n { font-weight: 500; font-size: 12px; margin-left: 5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.panel { padding-top: 20px; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.tile .big { font-size: 26px; font-weight: 700; color: var(--heading); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.tile .big small { font-size: 14px; color: var(--muted); font-weight: 500; }
+.tile .sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.sev { display: inline-flex; gap: 10px; font-size: 13px; }
+.sev b { font-variant-numeric: tabular-nums; }
+.section-title { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 26px 0 10px; }
+.section-title h2 { font-size: 17px; font-weight: 650; }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; background: var(--surface-2); }
+th, td { padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+.refs { display: flex; flex-wrap: wrap; gap: 4px; }
+a.ref { text-decoration: none; font-family: var(--mono); font-size: 11.5px; padding: 0 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent-ink); white-space: nowrap; }
+a.ref:hover { background: var(--accent); color: #fff; }
+a.ref code { font-size: inherit; background: none; padding: 0; }
+.more { font-size: 11.5px; color: var(--muted); }
+
+/* Requirements: one row each, opened for the detail */
+.reqs { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.req { border-bottom: 1px solid var(--line); }
+.req:last-child { border-bottom: 0; }
+.req-main { display: grid; grid-template-columns: 62px minmax(0, 1fr) 116px 150px 74px 92px; gap: 14px; align-items: center; width: 100%; padding: 11px 16px; border: 0; background: none; text-align: left; cursor: pointer; }
+.req-main:hover, .req-main[aria-expanded="true"] { background: var(--surface-2); }
+.req-id { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.req-title { font-weight: 550; color: var(--heading); min-width: 0; }
+.req-meta { display: contents; }
+.req-state { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.req-state i { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); flex: none; }
+.req-state.done { color: var(--ok); } .req-state.done i { background: var(--ok); }
+.req-state.progress { color: var(--accent-ink); } .req-state.progress i { background: var(--accent); }
+.req-state.failing { color: var(--bad); } .req-state.failing i { background: var(--bad); }
+.req-state.blocked { color: var(--warn); } .req-state.blocked i { background: var(--warn); }
+.req-tasks { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.req-tasks .bar { flex: 1; margin-top: 0; }
+.req-n { font-size: 12.5px; color: var(--muted); text-align: right; white-space: nowrap; }
+.req-detail { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px 32px; padding: 6px 16px 18px 92px; background: var(--surface-2); }
+.req-detail ul { list-style: none; padding: 0; margin: 6px 0 0; display: flex; flex-direction: column; gap: 7px; }
+.req-detail li { font-size: 13px; }
+.crit li { display: grid; grid-template-columns: 66px minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.crit li .ref { justify-self: start; }
+.req-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.req-task { display: grid; grid-template-columns: 18px 46px minmax(0, 1fr); gap: 6px; align-items: baseline; }
+.req-task .ref { justify-self: start; }
+.req-task code { background: var(--code-bg); padding: 0 4px; border-radius: 4px; }
+
+/* Documents */
+.doc { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 32px; align-items: start; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); max-height: calc(100vh - 32px); overflow: auto; font-size: 12.5px; border-left: 1px solid var(--line); padding-left: 12px; }
+.toc a { display: block; color: var(--muted); text-decoration: none; padding: 3px 0; line-height: 1.35; }
+.toc a.l3 { padding-left: 12px; }
+.toc a:hover { color: var(--accent); }
+.prose { min-width: 0; max-width: 92ch; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 32px 28px; }
+.prose h1 { font-size: 24px; margin-bottom: 14px; }
+.prose h2 { font-size: 19px; margin: 30px 0 10px; padding-top: 6px; }
+.prose h3 { font-size: 16px; margin: 22px 0 8px; }
+.prose h4 { font-size: 14px; margin: 18px 0 6px; }
+.prose p, .prose li { max-width: 80ch; }
+.prose p { margin: 8px 0; }
+.prose ul, .prose ol { padding-left: 22px; margin: 8px 0; }
+.prose li { margin: 3px 0; }
+.prose li.task { list-style: none; margin-left: -20px; }
+.prose code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+.prose .table-wrap { margin: 12px 0; }
+.prose blockquote { margin: 10px 0; padding: 4px 16px; border-left: 3px solid var(--line-strong); color: var(--muted); }
+.prose hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0; }
+.prose :target, .flash { animation: flash 1.6s ease-out; }
+@keyframes flash { from { background: var(--warn-soft); } to { background: transparent; } }
+.box { display: inline-block; width: 13px; height: 13px; border-radius: 3px; border: 1.5px solid var(--line-strong); margin-right: 7px; vertical-align: -2px; }
+.box.done { background: var(--ok); border-color: var(--ok); position: relative; }
+.box.done::after { content: ""; position: absolute; left: 3px; top: 0px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+pre.code { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overflow: auto; font-size: 12.5px; line-height: 1.5; }
+
+/* Plan */
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: 6px 12px; cursor: pointer; font-size: 13px; border-right: 1px solid var(--line-strong); }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.group { margin-top: 18px; }
+.group-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 0 2px 6px; }
+.group-head h3 { font-size: 14.5px; font-weight: 650; }
+.tasks { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.task-row { border-bottom: 1px solid var(--line); }
+.task-row:last-child { border-bottom: 0; }
+.task-main { display: grid; grid-template-columns: 22px 54px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 9px 14px; width: 100%; border: 0; background: none; text-align: left; cursor: pointer; }
+.task-main:hover { background: var(--surface-2); }
+.task-main .tid { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.task-main .ttl { min-width: 0; overflow-wrap: anywhere; }
+.task-main .ttl code { background: var(--code-bg); padding: 0 4px; border-radius: 4px; }
+.status { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--line-strong); display: inline-block; position: relative; top: 2px; }
+.status.done { background: var(--ok); border-color: var(--ok); }
+.status.done::after { content: ""; position: absolute; left: 4px; top: 1px; width: 3px; height: 7px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.status.blocked { border-color: var(--warn); background: var(--warn-soft); }
+.task-body { padding: 0 14px 12px 100px; font-size: 13px; color: var(--text); }
+.task-body .line { margin-bottom: 8px; }
+.task-body .blocked { background: var(--warn-soft); color: var(--warn); padding: 6px 10px; border-radius: 6px; margin-bottom: 8px; }
+
+/* Tests */
+.filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+.tests-table td.id { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+.tests-table tr.row { cursor: pointer; }
+.tests-table tr.row:hover td { background: var(--surface-2); }
+.res { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+.res.passed { background: var(--ok-soft); color: var(--ok); }
+.res.failed { background: var(--bad-soft); color: var(--bad); }
+.res.none { color: var(--muted); font-weight: 500; }
+.level { font-size: 12px; color: var(--muted); }
+.source-row td { background: var(--surface-2); }
+.report-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 14px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline; }
+
+/* Artifacts */
+.art { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; align-items: start; }
+.art-list { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); max-height: calc(100vh - 32px); display: flex; flex-direction: column; }
+.art-list .search { padding: 10px; max-width: none; flex: none; border-bottom: 1px solid var(--line); }
+.art-items { overflow: auto; padding-bottom: 6px; }
+.art-group { font-size: 11.5px; letter-spacing: .07em; text-transform: uppercase; font-weight: 650; color: var(--muted); padding: 12px 14px 4px; display: flex; justify-content: space-between; }
+.art-item { display: block; width: 100%; border: 0; background: none; text-align: left; padding: 5px 14px; cursor: pointer; }
+.art-item:hover { background: var(--surface-2); }
+.art-item[aria-current="true"] { background: var(--accent-soft); }
+.art-item .an { font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere; display: block; }
+.art-item .at { font-size: 11.5px; color: var(--muted); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.detail { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 24px; min-width: 0; }
+.detail h2 { font-size: 20px; margin-top: 4px; }
+.detail .name { font-family: var(--mono); font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.detail .desc { margin: 10px 0 4px; max-width: 80ch; }
+.dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; margin: 14px 0; font-size: 13px; }
+.dl dt { color: var(--muted); }
+.dl dd { margin: 0; overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); background: var(--surface); padding: 6px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; text-decoration: none; color: var(--text); }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.source-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 18px; }
+.source-head .mono { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+pre.src { max-height: 70vh; margin-top: 8px; }
+.src .k { color: var(--code-key); }
+.src .s { color: var(--code-str); }
+.src .n { color: var(--code-num); }
+.src .l { color: var(--code-lit); }
+
+/* Narrow screens */
+@media (max-width: 900px) {
+  .doc { grid-template-columns: minmax(0, 1fr); }
+  .toc { display: none; }
+  .art { grid-template-columns: minmax(0, 1fr); }
+  .art-list { position: static; max-height: 360px; }
+  .prose { padding: 18px 18px 22px; }
+}
+@media (max-width: 720px) {
+  .rail, .steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .rail button:nth-child(4), .step:nth-child(4) { border-right: 0; }
+  .rail button:nth-child(-n+4), .step:nth-child(-n+4) { border-bottom: 1px solid var(--line); }
+  .rail .gate, .step .gate { display: none; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .task-main { grid-template-columns: 22px minmax(0, 1fr); }
+  .task-main .tid, .task-main .tref { grid-column: 2; }
+  .task-body { padding-left: 46px; }
+  .req-main { grid-template-columns: 52px minmax(0, 1fr); }
+  .req-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; grid-column: 2; }
+  .req-tasks { min-width: 130px; }
+  .req-detail { grid-template-columns: minmax(0, 1fr); padding-left: 16px; }
+  .stamp { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="wrap" id="app" aria-live="polite"></main>
+<script type="application/json" id="lf-data">/*__DATA__*/{}</script>
+<script>
+(() => {
+  const data = JSON.parse(document.getElementById('lf-data').textContent);
+  const app = document.getElementById('app');
+  const LABELS = { prompt: 'Request', spec: 'Spec', plan: 'Plan', build: 'Build', review: 'Review', acceptance: 'Acceptance', accepted: 'Accepted' };
+  const GATES = { spec: 'spec', plan: 'plan', acceptance: 'accepted' };
+  const ui = { stage: null, attention: false, query: '', plan: 'all', planView: 'tasks', planQuery: '', tests: 'all', testQuery: '', openTests: new Set(), openTasks: new Set(), openReqs: new Set(), artifact: {}, artQuery: '', focus: null, showReport: false };
+
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const date = iso => { if (!iso) return ''; const d = new Date(iso); return isNaN(d) ? esc(iso) : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); };
+  const dateTime = iso => { if (!iso) return ''; const d = new Date(iso); return isNaN(d) ? esc(iso) : d.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); };
+  const ago = iso => {
+    if (!iso) return '';
+    const s = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (s < 0) return date(iso);
+    if (s < 90) return 'just now';
+    if (s < 3600) return `${Math.round(s / 60)} min ago`;
+    if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+    if (s < 86400 * 14) return `${Math.round(s / 86400)} d ago`;
+    return date(iso);
+  };
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const KIND_WORDS = {
+    'Data model': ['schema item', 'schema items'], 'Logic blocks': ['block', 'blocks'], 'Logic flows': ['flow', 'flows'],
+    Recipes: ['recipe', 'recipes'], 'Business processes': ['process', 'processes'], Events: ['event', 'events'],
+    Schedules: ['schedule', 'schedules'], Configurations: ['configuration', 'configurations'],
+    'Service connections': ['service connection', 'service connections'], Projects: ['project', 'projects'],
+    'Reference data': ['reference data file', 'reference data files'], Security: ['security file', 'security files'], Files: ['file', 'files'],
+  };
+  const kindWord = (group, n) => (KIND_WORDS[group] || [group.toLowerCase(), group.toLowerCase()])[n === 1 ? 0 : 1];
+  const stageIndex = stage => data.stages.indexOf(stage);
+  const byId = id => data.changes.find(c => c.id === id);
+  const refLink = (ref, label) => `<a class="ref" href="#" data-ref="${esc(ref)}">${esc(label || ref)}</a>`;
+  const artLink = name => `<a class="ref" href="#" data-artifact="${esc(name)}"><code>${esc(name)}</code></a>`;
+  const refList = (items, link, max = 8) => items.length
+    ? `<span class="refs">${items.slice(0, max).map(link).join('')}${items.length > max ? `<span class="more">+${items.length - max}</span>` : ''}</span>`
+    : '<span class="muted">—</span>';
+
+  // ------------------------------------------------------------------------------------------------- the board
+
+  function counts(c) {
+    const done = c.tasks.filter(t => t.done).length;
+    const kinds = {};
+    for (const a of c.artifacts) kinds[a.group] = (kinds[a.group] || 0) + 1;
+    return { done, total: c.tasks.length, kinds };
+  }
+
+  function nextStep(c) {
+    const k = counts(c);
+    switch (c.stage) {
+      case 'prompt': return 'Answer the open questions, then write the spec.';
+      case 'spec': return c.approvals.spec.state === 'none' ? '<b>Approve the spec</b> to write the build plan.' : 'Spec approved: write the build plan.';
+      case 'plan': return c.approvals.plan.state === 'none' ? '<b>Approve the plan</b> to start the build.' : 'Plan approved: start the build.';
+      case 'build': {
+        const open = c.tasks.filter(t => !t.done);
+        return open.length ? `Build: <b>${plural(open.length, 'task')} open</b> (${open.slice(0, 3).map(t => t.id).join(', ')}${open.length > 3 ? ', …' : ''}).` : 'Every task done: run the tests and the review.';
+      }
+      case 'review': {
+        const open = (c.review?.findings || []).filter(f => /open/i.test(f.status)).length;
+        return open ? `In review: <b>${plural(open, 'finding')} open</b>.` : 'In review.';
+      }
+      case 'acceptance': return '<b>Accept or reject</b> the change.';
+      case 'accepted': return c.approvals.accepted ? `Accepted on ${date(c.approvals.accepted.at)}.` : 'Accepted.';
+      default: return '';
+    }
+  }
+
+  function matches(c, q) {
+    if (!q) return true;
+    q = q.toLowerCase();
+    return c.title.toLowerCase().includes(q) || c.id.includes(q) || c.artifacts.some(a => a.name.toLowerCase().includes(q));
+  }
+
+  function renderBoard() {
+    document.title = `${data.project || 'Logic Fabric'} changes`;
+    const shown = data.changes.filter(c => (!ui.stage || c.stage === ui.stage) && (!ui.attention || c.attention.length) && matches(c, ui.query));
+    const dev = data.environments.find(e => e.role === 'development');
+    app.innerHTML = `
+      <header class="top">
+        <div>
+          <div class="eyebrow">Logic Fabric changes</div>
+          <h1>${esc(data.project || 'Workspace')}</h1>
+          <div class="facts">
+            ${data.solution ? `<span>Solution <b>${esc(data.solution)}</b></span>` : ''}
+            ${data.prefix ? `<span>Prefix <b>${esc(data.prefix)}</b></span>` : ''}
+            ${dev?.url ? `<span>Development <b>${esc(dev.url.replace(/^https:\/\//, ''))}</b></span>` : ''}
+            <span>Regression set <b class="num">${data.baselineTests}</b> tests</span>
+          </div>
+        </div>
+        <div class="stamp">Generated ${dateTime(data.generatedAt)} from <code>${esc(data.folder)}/</code><br>Refresh with <code>/logic-fabric-dataverse:dashboard</code></div>
+      </header>
+      <nav class="rail" aria-label="Changes by stage">
+        ${data.stages.map(s => {
+          const n = data.changes.filter(c => c.stage === s).length;
+          return `<button type="button" data-stage="${s}" aria-pressed="${ui.stage === s}"><span class="label">${LABELS[s]}</span><span class="count${n ? '' : ' zero'}">${n}</span>${GATES[s] ? '<span class="gate" aria-hidden="true"></span>' : ''}</button>`;
+        }).join('')}
+      </nav>
+      <div class="rail-note"><i aria-hidden="true"></i> You approve here: the spec, the plan, and the change at acceptance.</div>
+      <div class="toolbar">
+        <div class="search"><input id="board-search" type="search" placeholder="Search changes or artifacts" value="${esc(ui.query)}" aria-label="Search changes or artifacts"></div>
+        <button type="button" class="chip-btn" id="attention" aria-pressed="${ui.attention}">Needs attention</button>
+        ${ui.stage ? `<button type="button" class="chip-btn" id="clear-stage" aria-pressed="true">${LABELS[ui.stage]} ✕</button>` : ''}
+        <span class="count-note num">${shown.length} of ${plural(data.changes.length, 'change')}</span>
+      </div>
+      ${shown.length ? `<section class="cards">${shown.map(card).join('')}</section>` : `<div class="empty">${data.changes.length ? 'No change matches.' : 'No changes yet. Start one with <code>/logic-fabric-dataverse:start</code>.'}</div>`}
+      ${data.reports.length ? `<div class="section-title"><h2>Project reports</h2></div><div class="table-wrap"><table><thead><tr><th>Report</th><th>Command</th><th>Date</th></tr></thead><tbody>${data.reports.map((r, i) => `<tr><td><a href="#report-${i}">${esc(r.title)}</a></td><td class="mono">${esc(r.command)}</td><td>${esc(r.date)}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
+  }
+
+  function card(c) {
+    const k = counts(c);
+    const index = stageIndex(c.stage);
+    const accepted = c.stage === 'accepted';
+    const tests = c.testRun.lastRun || c.testRun.total
+      ? `${c.testRun.passed}<small>/${c.testRun.total} passed</small>`
+      : `${c.tests.length}<small> written</small>`;
+    const f = c.findings;
+    const findings = f.blocker + f.major + f.minor ? `${f.blocker + f.major}<small> major · ${f.minor} minor</small>` : (c.review ? '0' : '<small>not reviewed</small>');
+    const ap = (label, a) => a.state === 'none' ? `<span class="ap"><span class="dot"></span>${label} not approved</span>`
+      : `<span class="ap ${a.state}"><span class="dot"></span>${label} ${a.state === 'changed' ? 'changed after approval' : `approved ${date(a.at)}`}</span>`;
+    const kinds = Object.entries(k.kinds).map(([g, n]) => `<span class="kind"><b>${n}</b> ${esc(kindWord(g, n))}</span>`).join('');
+    return `<article class="card" tabindex="0" role="link" data-open="${esc(c.id)}" aria-label="${esc(c.title)}">
+      <div class="card-head">
+        <div style="min-width:0"><div class="id">${esc(c.id)}${data.active === c.id ? '<span class="badge-active">Active</span>' : ''}</div><h3>${esc(c.title)}</h3></div>
+        <span class="pill ${accepted ? 'accepted' : ''}">${LABELS[c.stage]}</span>
+      </div>
+      <div class="track${accepted ? ' accepted' : ''}" aria-hidden="true">${data.stages.map((s, i) => `<span class="${i < index ? 'done' : i === index ? 'now' : ''}"></span>`).join('')}</div>
+      <div class="stats">
+        <div class="stat"><div class="k">Tasks</div><div class="v num">${k.total ? `${k.done}<small>/${k.total}</small>` : '<small>no plan yet</small>'}</div>${k.total ? `<div class="bar${k.done === k.total ? ' ok' : ''}"><i style="width:${Math.round(100 * k.done / k.total)}%"></i></div>` : ''}</div>
+        <div class="stat"><div class="k">Tests</div><div class="v num">${tests}</div></div>
+        <div class="stat"><div class="k">Findings</div><div class="v num">${findings}</div></div>
+      </div>
+      <div class="approvals">${ap('Spec', c.approvals.spec)}${c.quick ? '<span class="ap"><span class="dot"></span>Small change: one approval</span>' : ap('Plan', c.approvals.plan)}</div>
+      ${c.attention.length ? `<div class="alerts">${c.attention.map(a => `<div class="alert ${a.level}">${esc(a.text)}</div>`).join('')}</div>` : ''}
+      <div class="next">${nextStep(c)}</div>
+      ${kinds ? `<div class="kinds">${kinds}</div>` : ''}
+      <div class="card-foot"><span>${c.owner ? esc(c.owner) : ''}</span><span>Updated ${ago(c.updatedAt)}</span></div>
+    </article>`;
+  }
+
+  // ------------------------------------------------------------------------------------------------- a change
+
+  function tabsOf(c) {
+    const k = counts(c);
+    const tabs = [['overview', 'Overview']];
+    if (c.docs.request) tabs.push(['request', 'Request']);
+    if (c.docs.spec) tabs.push(['spec', 'Spec']);
+    if (c.tasks.length || c.docs.plan) tabs.push(['plan', 'Plan', k.total ? `${k.done}/${k.total}` : '']);
+    if (c.tests.length) tabs.push(['tests', 'Tests', c.tests.length]);
+    if (c.artifacts.length) tabs.push(['artifacts', 'Artifacts', c.artifacts.length]);
+    if (c.docs.buildLog) tabs.push(['build-log', 'Build log']);
+    if (c.docs.review) tabs.push(['review', 'Review', c.review?.findings.length || '']);
+    if (c.docs.acceptance) tabs.push(['acceptance', 'Acceptance']);
+    return tabs;
+  }
+
+  function renderChange(c, tab) {
+    document.title = `${c.title} · ${data.project || 'Logic Fabric'}`;
+    const tabs = tabsOf(c);
+    if (!tabs.some(t => t[0] === tab)) tab = 'overview';
+    const index = stageIndex(c.stage);
+    const gate = s => {
+      if (s === 'spec') return c.approvals.spec;
+      if (s === 'plan') return c.approvals.plan;
+      if (s === 'acceptance') return c.approvals.accepted ? { state: 'valid', at: c.approvals.accepted.at, by: c.approvals.accepted.by } : { state: 'none' };
+      return null;
+    };
+    const steps = data.stages.map((s, i) => {
+      const g = GATES[s] ? gate(s) : null;
+      const when = g && g.state !== 'none'
+        ? (g.state === 'changed' ? 'Changed after approval' : `Approved ${date(g.at)}${g.fingerprint ? ` · <span class="mono">${esc(g.fingerprint)}</span>` : ''}`)
+        : (i === index ? 'Now' : '');
+      return `<div class="step ${i < index ? 'done' : i === index ? 'now' : ''}"><div class="name">${LABELS[s]}</div><div class="when">${when}</div>${GATES[s] ? `<span class="gate ${g && g.state === 'valid' ? 'ok' : g && g.state === 'changed' ? 'bad' : ''}" title="You approve here"></span>` : ''}</div>`;
+    }).join('');
+
+    app.innerHTML = `
+      <a class="back" href="#">← All changes</a>
+      <header class="change-head">
+        <div style="min-width:0">
+          <div class="eyebrow">${esc(c.id)}${data.active === c.id ? ' · active change' : ''}${c.quick ? ' · small change' : ''}</div>
+          <h1>${esc(c.title)}</h1>
+          <div class="facts">${c.owner ? `<span>Owner <b>${esc(c.owner)}</b></span>` : ''}<span>Updated <b>${ago(c.updatedAt)}</b></span><span>${nextStep(c)}</span></div>
+        </div>
+      </header>
+      <div class="steps${c.stage === 'accepted' ? ' accepted' : ''}" aria-label="Stages">${steps}</div>
+      ${c.attention.length ? `<div class="alerts" style="margin-top:12px">${c.attention.map(a => `<div class="alert ${a.level}">${esc(a.text)}</div>`).join('')}</div>` : ''}
+      <nav class="tabs" role="tablist">${tabs.map(([id, label, n]) => `<button type="button" class="tab" role="tab" data-tab="${id}" aria-selected="${id === tab}">${label}${n !== undefined && n !== '' ? `<span class="n">${n}</span>` : ''}</button>`).join('')}</nav>
+      <section class="panel" id="panel">${panel(c, tab)}</section>`;
+    afterRender(c, tab);
+  }
+
+  function panel(c, tab) {
+    switch (tab) {
+      case 'overview': return overview(c);
+      case 'request': return doc(c.docs.request);
+      case 'spec': return doc(c.docs.spec);
+      case 'plan': return plan(c);
+      case 'tests': return tests(c);
+      case 'artifacts': return artifacts(c);
+      case 'build-log': return doc(c.docs.buildLog);
+      case 'review': return review(c);
+      case 'acceptance': return doc(c.docs.acceptance);
+      default: return '';
+    }
+  }
+
+  function overview(c) {
+    const k = counts(c);
+    const blocked = c.tasks.filter(t => t.blocked && !t.done).length;
+    const levels = c.tests.reduce((a, t) => (a[t.level || 'other'] = (a[t.level || 'other'] || 0) + 1, a), {});
+    const f = c.findings;
+    return `
+      <div class="tiles">
+        <div class="tile"><div class="eyebrow">Tasks</div><div class="big">${k.done}<small> / ${k.total}</small></div>${k.total ? `<div class="bar${k.done === k.total ? ' ok' : ''}"><i style="width:${Math.round(100 * k.done / k.total)}%"></i></div>` : ''}<div class="sub">${k.total ? `${k.total - k.done} open${blocked ? `, ${blocked} blocked` : ''}` : 'No plan yet'}</div></div>
+        <div class="tile"><div class="eyebrow">Tests</div><div class="big">${c.tests.length}<small> cases</small></div><div class="sub">${Object.entries(levels).map(([l, n]) => `${n} ${esc(l)}`).join(' · ') || 'None written'}${c.testRun.lastRun ? `<br>Last run ${esc(c.testRun.lastRun)}: ${c.testRun.passed}/${c.testRun.total} passed` : '<br>Not run as a full set yet'}</div></div>
+        <div class="tile"><div class="eyebrow">Review</div><div class="big">${c.review ? f.blocker + f.major + f.minor : '—'}<small>${c.review ? ' findings' : ''}</small></div><div class="sub">${c.review ? `<span class="sev"><span><b>${f.blocker}</b> blocker</span><span><b>${f.major}</b> major</span><span><b>${f.minor}</b> minor</span></span>` : 'Not reviewed yet'}</div></div>
+        <div class="tile"><div class="eyebrow">Artifacts saved</div><div class="big">${c.artifacts.length}</div><div class="sub">${Object.entries(k.kinds).map(([g, n]) => `${n} ${esc(kindWord(g, n))}`).join(' · ') || 'Nothing saved yet'}</div></div>
+      </div>
+      ${c.requirements.length ? `
+      <div class="section-title"><h2>Requirements</h2><span class="muted">Open one for its criteria, tasks, tests and artifacts</span></div>
+      <div class="reqs">${c.requirements.map(r => requirementRow(c, r)).join('')}</div>` : ''}`;
+  }
+
+  // A requirement's state: failing tests first, then blocked tasks, then how far its tasks are.
+  function requirementState(c, r) {
+    const tests = r.tests.map(id => c.tests.find(t => t.id === id)).filter(Boolean);
+    const tasks = r.tasks.map(id => c.tasks.find(t => t.id === id)).filter(Boolean);
+    if (tests.some(t => t.result === 'failed')) return ['failing', 'Failing'];
+    if (tasks.some(t => t.blocked && !t.done)) return ['blocked', 'Blocked'];
+    if (!tasks.length) return ['none', 'No tasks'];
+    if (tasks.every(t => t.done)) return ['done', 'Done'];
+    return tasks.some(t => t.done) ? ['progress', 'In progress'] : ['open', 'Not started'];
+  }
+
+  function requirementRow(c, r) {
+    const [state, label] = requirementState(c, r);
+    const open = ui.openReqs.has(r.id);
+    const tasks = r.tasks.map(id => c.tasks.find(t => t.id === id)).filter(Boolean);
+    const tests = r.tests.map(id => c.tests.find(t => t.id === id)).filter(Boolean);
+    const passed = tests.filter(t => t.result === 'passed').length;
+    const failed = tests.filter(t => t.result === 'failed').length;
+    const notRun = tests.length - passed - failed;
+    const testSummary = !tests.length ? 'none written'
+      : [passed && `${passed} passed`, failed && `${failed} failed`, notRun && `${notRun} not run`].filter(Boolean).join(', ');
+    return `<div class="req" id="req-row-${esc(r.id)}">
+      <button type="button" class="req-main" data-req="${esc(r.id)}" aria-expanded="${open}">
+        <span class="req-id">${esc(r.id)}</span>
+        <span class="req-title">${esc(r.title)}</span>
+        <span class="req-meta">
+          <span class="req-state ${state}"><i aria-hidden="true"></i>${label}</span>
+          <span class="req-tasks">${tasks.length ? `<span class="bar${r.tasksDone === tasks.length ? ' ok' : ''}"><i style="width:${Math.round(100 * r.tasksDone / tasks.length)}%"></i></span><span class="num">${r.tasksDone}/${tasks.length}</span>` : ''}</span>
+          <span class="req-n num">${plural(tests.length, 'test')}</span>
+          <span class="req-n num">${plural(r.artifacts.length, 'artifact')}</span>
+        </span>
+      </button>
+      ${open ? `<div class="req-detail">
+        <div>
+          <div class="eyebrow">Acceptance criteria</div>
+          ${r.criteria.length ? `<ul class="crit">${r.criteria.map(a => `<li>${refLink(a)}<span>${esc(r.wording[a] || '')}</span></li>`).join('')}</ul>` : '<p class="muted">None in the spec.</p>'}
+          <p style="margin:10px 0 0">${refLink(r.id, `Read ${r.id} in the spec`)}</p>
+        </div>
+        <div class="req-side">
+          <div><div class="eyebrow">Tasks</div>${tasks.length ? `<ul>${tasks.map(t => `<li class="req-task"><span class="status ${t.done ? 'done' : t.blocked ? 'blocked' : ''}" aria-label="${t.done ? 'Done' : t.blocked ? 'Blocked' : 'Open'}"></span>${refLink(t.id)}<span>${t.title}</span></li>`).join('')}</ul>` : '<p class="muted">No task names this requirement.</p>'}</div>
+          <div><div class="eyebrow">Tests · ${esc(testSummary)}</div>${tests.length ? `<div style="margin-top:6px">${refList(tests.map(t => t.id), x => refLink(x), 40)}</div>` : ''}</div>
+          <div><div class="eyebrow">Artifacts</div><div style="margin-top:6px">${refList(r.artifacts, artLink, 20)}</div></div>
+        </div>
+      </div>` : ''}
+    </div>`;
+  }
+
+  function doc(d) {
+    if (!d) return '<div class="empty">Not written yet.</div>';
+    const toc = d.toc.filter(t => t.level <= 3);
+    return `<div class="doc">${toc.length > 2 ? `<nav class="toc" aria-label="Contents">${toc.map(t => `<a class="l${t.level}" href="#" data-anchor="${esc(t.id)}">${esc(t.text)}</a>`).join('')}</nav>` : '<div></div>'}<article class="prose">${d.html}</article></div>`;
+  }
+
+  function plan(c) {
+    const k = counts(c);
+    const blocked = c.tasks.filter(t => t.blocked && !t.done).length;
+    const q = ui.planQuery.toLowerCase();
+    const keep = t => (ui.plan === 'all' || (ui.plan === 'open' && !t.done) || (ui.plan === 'done' && t.done) || (ui.plan === 'blocked' && t.blocked && !t.done))
+      && (!q || t.text.toLowerCase().includes(q) || t.id.toLowerCase() === q || (t.ref || '').toLowerCase().includes(q));
+    const sections = [];
+    for (const t of c.tasks) {
+      let s = sections.find(x => x.name === t.section);
+      if (!s) sections.push(s = { name: t.section, tasks: [] });
+      s.tasks.push(t);
+    }
+    const head = `<div class="filters">
+      <span class="seg" role="group" aria-label="View">
+        <button type="button" data-plan-view="tasks" aria-pressed="${ui.planView === 'tasks'}">Tasks</button>
+        <button type="button" data-plan-view="document" aria-pressed="${ui.planView === 'document'}">Document</button>
+      </span>
+      ${ui.planView === 'tasks' ? `<span class="seg" role="group" aria-label="Show">
+        ${[['all', `All ${k.total}`], ['open', `Open ${k.total - k.done}`], ['done', `Done ${k.done}`], ['blocked', `Blocked ${blocked}`]].map(([v, l]) => `<button type="button" data-plan="${v}" aria-pressed="${ui.plan === v}">${l}</button>`).join('')}
+      </span>
+      <div class="search"><input id="plan-search" type="search" placeholder="Find a task or requirement" value="${esc(ui.planQuery)}" aria-label="Find a task"></div>` : ''}
+    </div>`;
+    if (ui.planView === 'document' || !c.tasks.length) return head + doc(c.docs.plan || c.docs.spec);
+    const body = sections.map(s => {
+      const shown = s.tasks.filter(keep);
+      if (!shown.length) return '';
+      return `<div class="group"><div class="group-head"><h3>${esc(s.name || 'Tasks')}</h3><span class="muted num">${s.tasks.filter(t => t.done).length}/${s.tasks.length} done</span></div>
+        <div class="tasks">${shown.map(t => taskRow(c, t)).join('')}</div></div>`;
+    }).join('');
+    return head + (body || '<div class="empty">No task matches.</div>');
+  }
+
+  function taskRow(c, t) {
+    const open = ui.openTasks.has(t.id);
+    return `<div class="task-row" id="task-${esc(t.id)}">
+      <button type="button" class="task-main" data-task="${esc(t.id)}" aria-expanded="${open}">
+        <span class="status ${t.done ? 'done' : t.blocked ? 'blocked' : ''}" aria-label="${t.done ? 'Done' : t.blocked ? 'Blocked' : 'Open'}"></span>
+        <span class="tid">${esc(t.id)}</span>
+        <span class="ttl">${t.title}</span>
+        <span class="tref">${t.reqs.length ? `<span class="refs">${t.reqs.map(r => refLink(r)).join('')}</span>` : `<span class="muted" style="font-size:12px">${esc(t.ref || '')}</span>`}</span>
+      </button>
+      ${open ? `<div class="task-body">
+        ${t.blocked ? `<div class="blocked">Blocked: ${esc(t.blockedReason || '')}</div>` : ''}
+        ${t.html ? `<div class="line">${t.html}</div>` : ''}
+        ${t.artifacts.length ? `<div class="line"><span class="muted">Artifacts</span> ${refList(t.artifacts, artLink, 12)}</div>` : ''}
+        ${t.tests.length ? `<div class="line"><span class="muted">Tests</span> ${refList(t.tests, x => refLink(x), 20)}</div>` : ''}
+      </div>` : ''}
+    </div>`;
+  }
+
+  function tests(c) {
+    const q = ui.testQuery.toLowerCase();
+    const levels = [...new Set(c.tests.map(t => t.level).filter(Boolean))];
+    const failedIds = new Set((c.report?.failures || []).map(f => (/TC-[\w.-]+/.exec(f.id) || [])[0]));
+    const keep = t => (ui.tests === 'all' || t.level === ui.tests || (ui.tests === 'failed' && t.result === 'failed'))
+      && (!q || t.id.toLowerCase().includes(q) || (t.target?.name || '').toLowerCase().includes(q) || t.covers.some(x => x.toLowerCase().includes(q)));
+    const shown = c.tests.filter(keep);
+    const report = c.report
+      ? `<div class="report-box"><span><b>Last run</b> ${esc(c.report.run || '')}</span><span class="num"><b>${c.report.passed}/${c.report.total}</b> passed</span>${c.report.failures.length ? `<span class="res failed">${plural(c.report.failures.length, 'failure')}</span>` : '<span class="res passed">All passed</span>'}${c.docs.testReport ? '<button type="button" class="btn" data-show-report>Open the test report</button>' : ''}</div>`
+      : `<div class="report-box"><span class="muted">No full test run yet: results appear here after <code>/logic-fabric-dataverse:test</code> writes the test report.</span></div>`;
+    if (ui.showReport && c.docs.testReport) {
+      return `<div class="filters"><button type="button" class="btn" data-hide-report>← Back to the test cases</button></div>${doc(c.docs.testReport)}`;
+    }
+    return `${report}
+      <div class="filters">
+        <span class="seg" role="group" aria-label="Show">${[['all', `All ${c.tests.length}`], ...levels.map(l => [l, `${l[0].toUpperCase()}${l.slice(1)} ${c.tests.filter(t => t.level === l).length}`]), ...(failedIds.size ? [['failed', `Failed ${failedIds.size}`]] : [])].map(([v, l]) => `<button type="button" data-tests="${esc(v)}" aria-pressed="${ui.tests === v}">${esc(l)}</button>`).join('')}</span>
+        <div class="search"><input id="test-search" type="search" placeholder="Find a test, artifact or criterion" value="${esc(ui.testQuery)}" aria-label="Find a test"></div>
+        <span class="count-note num">${shown.length} shown</span>
+      </div>
+      <div class="table-wrap"><table class="tests-table">
+        <thead><tr><th>Test</th><th>Level</th><th>Runs</th><th>Covers</th><th>Checks</th><th>Last result</th></tr></thead>
+        <tbody>${shown.map(t => {
+          const open = ui.openTests.has(t.id);
+          const failure = c.report?.failures.find(f => f.id.includes(t.id));
+          return `<tr class="row" id="test-${esc(t.id)}" data-test="${esc(t.id)}" aria-expanded="${open}">
+            <td class="id">${esc(t.id)}${t.retired ? ' <span class="muted">(retired)</span>' : ''}</td>
+            <td class="level">${esc(t.level || '')}${t.runAs ? `<br>as ${esc(t.runAs)}` : ''}</td>
+            <td>${t.target ? `<span class="muted">${esc(t.target.kind)}</span> ${c.artifacts.some(a => a.name === t.target.name) ? artLink(t.target.name) : `<code>${esc(t.target.name || '')}</code>`}` : ''}${t.trigger ? `<br><span class="muted">on ${esc(t.trigger)}</span>` : ''}</td>
+            <td>${refList(t.covers, x => refLink(x), 4)}</td>
+            <td>${esc(t.expects.join(', '))}</td>
+            <td>${t.result ? `<span class="res ${t.result}">${t.result}</span>` : '<span class="res none">—</span>'}</td>
+          </tr>${open ? `<tr class="source-row"><td colspan="6">${failure ? `<div class="alert bad" style="margin-bottom:8px">Expected ${esc(failure.expected)}; got ${esc(failure.actual)}</div>` : ''}<pre class="code src">${yaml(t.source)}</pre></td></tr>` : ''}`;
+        }).join('')}</tbody></table></div>`;
+  }
+
+  function artifacts(c) {
+    const q = ui.artQuery.toLowerCase();
+    const list = c.artifacts.filter(a => !q || a.name.toLowerCase().includes(q) || (a.title || '').toLowerCase().includes(q));
+    const selected = c.artifacts.find(a => a.name === ui.artifact[c.id]) || list[0] || c.artifacts[0];
+    if (selected) ui.artifact[c.id] = selected.name;
+    const groups = [];
+    for (const a of list) {
+      let g = groups.find(x => x.name === a.group);
+      if (!g) groups.push(g = { name: a.group, items: [] });
+      g.items.push(a);
+    }
+    const usedBy = selected ? c.tasks.filter(t => t.artifacts.includes(selected.name)) : [];
+    const testedBy = selected ? c.tests.filter(t => t.target?.name === selected.name) : [];
+    const ioTable = (title, rows) => rows.length ? `<h3 style="font-size:14px;margin-top:18px">${title}</h3><div class="table-wrap" style="margin-top:6px"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>${rows.map(r => `<tr><td><code>${esc(r.name)}</code>${r.required ? ' <span class="muted" title="Required">*</span>' : ''}</td><td>${esc(r.type)}</td><td>${esc(r.description || '')}</td></tr>`).join('')}</tbody></table></div>` : '';
+    return `<div class="art">
+      <aside class="art-list">
+        <div class="search"><input id="art-search" type="search" placeholder="Find an artifact" value="${esc(ui.artQuery)}" aria-label="Find an artifact"></div>
+        <div class="art-items">${groups.map(g => `<div class="art-group"><span>${esc(g.name)}</span><span class="num">${g.items.length}</span></div>${g.items.map(a => `<button type="button" class="art-item" data-select="${esc(a.name)}" aria-current="${a === selected}"><span class="an">${esc(a.label || a.name)}</span>${a.subtitle || a.title ? `<span class="at">${esc(a.subtitle || a.title)}</span>` : ''}</button>`).join('')}`).join('') || '<div class="art-group">Nothing matches</div>'}</div>
+      </aside>
+      ${selected ? `<div class="detail">
+        <div class="eyebrow">${esc(selected.group)}${selected.created ? ' · created by this change' : ''}</div>
+        <h2>${esc(selected.title || selected.name)}</h2>
+        <div class="name">${esc(selected.name)}</div>
+        ${selected.description ? `<p class="desc">${esc(selected.description)}</p>` : ''}
+        ${selected.url ? `<div class="actions"><a class="btn primary" href="${esc(selected.url)}" target="_blank" rel="noopener">Open in development ↗</a></div>` : ''}
+        ${selected.facts.length ? `<dl class="dl">${selected.facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>` : ''}
+        ${selected.io ? ioTable('Inputs', selected.io.inputs) + ioTable('Outputs', selected.io.outputs) : ''}
+        ${usedBy.length || testedBy.length ? `<dl class="dl">${usedBy.length ? `<dt>Plan tasks</dt><dd>${refList(usedBy.map(t => t.id), x => refLink(x), 12)}</dd>` : ''}${testedBy.length ? `<dt>Tests</dt><dd>${refList(testedBy.map(t => t.id), x => refLink(x), 24)}</dd>` : ''}</dl>` : ''}
+        <div class="source-head"><span class="mono">artifacts/${esc(selected.file)}</span><button type="button" class="btn" data-copy>Copy source</button></div>
+        <pre class="code src" id="source">${selected.language === 'json' ? json(selected.source) : selected.language === 'xml' ? xml(selected.source) : esc(selected.source)}</pre>
+      </div>` : '<div class="empty">No artifacts saved yet.</div>'}
+    </div>`;
+  }
+
+  function review(c) {
+    if (!c.review?.findings.length) return doc(c.docs.review);
+    return `${c.review.verdict ? `<div class="report-box"><span><b>Verdict</b> ${esc(c.review.verdict)}</span></div>` : ''}
+      <div class="table-wrap" style="margin-bottom:20px"><table><thead><tr><th>Finding</th><th>Severity</th><th>Artifact</th><th>Rule</th><th>What and evidence</th><th>Fix</th><th>Status</th></tr></thead>
+      <tbody>${c.review.findings.map(f => `<tr id="finding-${esc(f.id)}"><td class="mono">${esc(f.id)}</td><td><span class="res ${/blocker|major/i.test(f.severity) ? 'failed' : 'none'}">${esc(f.severity)}</span></td><td>${esc(f.artifact)}</td><td class="mono">${esc(f.rule)}</td><td>${esc(f.finding)}</td><td>${esc(f.fix)}</td><td><span class="res ${/fixed|closed/i.test(f.status) ? 'passed' : /open/i.test(f.status) ? 'failed' : 'none'}">${esc(f.status)}</span></td></tr>`).join('')}</tbody></table></div>
+      ${doc(c.docs.review)}`;
+  }
+
+  // ------------------------------------------------------------------------------------------------- code
+
+  function json(src) {
+    const re = /("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false|null)\b|-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g;
+    let out = '', last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      out += m[1] ? (m[2] ? `<span class="k">${esc(m[1])}</span>${m[2]}` : `<span class="s">${esc(m[1])}</span>`) : m[3] ? `<span class="l">${m[0]}</span>` : `<span class="n">${m[0]}</span>`;
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+  const xml = src => esc(src).replace(/(&lt;\/?)([\w:.-]+)/g, '$1<span class="k">$2</span>').replace(/([\w:-]+)=(&quot;.*?&quot;)/g, '<span class="n">$1</span>=<span class="s">$2</span>');
+  const yaml = src => esc(src).split('\n').map(l => l.replace(/^(\s*(?:- )?)([\w-]+)(:)/, '$1<span class="k">$2</span>$3').replace(/(#.*)$/, '<span class="l">$1</span>')).join('\n');
+
+  // ------------------------------------------------------------------------------------------------- routing
+
+  function route() {
+    const hash = decodeURIComponent(location.hash.slice(1));
+    const report = /^report-(\d+)$/.exec(hash);
+    if (report && data.reports[report[1]]) {
+      const r = data.reports[report[1]];
+      app.innerHTML = `<a class="back" href="#">← All changes</a><header class="change-head"><div><div class="eyebrow">${esc(r.command)} · ${esc(r.date)}</div><h1>${esc(r.title)}</h1></div></header>${doc(r)}`;
+      afterRender(null, null);
+      return;
+    }
+    const m = /^c-(.+?)(?:--([\w-]+))?$/.exec(hash);
+    const change = m && byId(m[1]);
+    if (change) renderChange(change, m[2] || 'overview');
+    else renderBoard();
+    if (!ui.focus) window.scrollTo(0, 0);
+  }
+
+  function go(id, tab, focus) {
+    ui.focus = focus || null;
+    const hash = `#c-${id}--${tab}`;
+    if (location.hash === hash) route(); else location.hash = hash;
+  }
+
+  function afterRender(c, tab) {
+    const focus = ui.focus;
+    ui.focus = null;
+    if (!focus) return;
+    requestAnimationFrame(() => {
+      let el = null;
+      if (focus.anchor) el = document.getElementById(focus.anchor);
+      if (focus.text) el = [...document.querySelectorAll('.prose a.ref')].find(a => a.dataset.ref === focus.text) || el;
+      if (focus.id) el = document.getElementById(focus.id);
+      if (el) { el.scrollIntoView({ block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1700); }
+    });
+  }
+
+  function followRef(c, ref) {
+    if (/^REQ-/.test(ref)) return go(c.id, 'spec', { anchor: ref.toLowerCase() });
+    if (/^AC-/.test(ref)) return go(c.id, 'spec', { text: ref });
+    if (/^TC-/.test(ref)) { ui.openTests.add(ref); ui.tests = 'all'; ui.testQuery = ''; ui.showReport = false; return go(c.id, 'tests', { id: `test-${ref}` }); }
+    if (/^T-/.test(ref)) { ui.openTasks.add(ref); ui.plan = 'all'; ui.planQuery = ''; ui.planView = 'tasks'; return go(c.id, 'plan', { id: `task-${ref}` }); }
+    if (/^F-/.test(ref)) return go(c.id, 'review', { id: `finding-${ref}` });
+  }
+
+  // ------------------------------------------------------------------------------------------------- events
+
+  const current = () => { const m = /^c-(.+?)(?:--([\w-]+))?$/.exec(decodeURIComponent(location.hash.slice(1))); return m ? byId(m[1]) : null; };
+  const rerender = () => { const c = current(); if (c) { const tab = (/--([\w-]+)$/.exec(location.hash) || [])[1] || 'overview'; document.getElementById('panel').innerHTML = panel(c, tab); } else renderBoard(); };
+
+  app.addEventListener('click', e => {
+    const t = e.target.closest('[data-open],[data-stage],#attention,#clear-stage,[data-tab],[data-ref],[data-artifact],[data-anchor],[data-plan],[data-plan-view],[data-task],[data-req],[data-tests],[data-test],[data-select],[data-copy],[data-show-report],[data-hide-report]');
+    if (!t) return;
+    const c = current();
+    if (t.dataset.open) { go(t.dataset.open, 'overview'); return; }
+    if (t.dataset.stage) { ui.stage = ui.stage === t.dataset.stage ? null : t.dataset.stage; renderBoard(); return; }
+    if (t.id === 'attention') { ui.attention = !ui.attention; renderBoard(); return; }
+    if (t.id === 'clear-stage') { ui.stage = null; renderBoard(); return; }
+    if (t.dataset.tab && c) { go(c.id, t.dataset.tab); return; }
+    if (t.dataset.ref && c) { e.preventDefault(); followRef(c, t.dataset.ref); return; }
+    if (t.dataset.artifact && c) { e.preventDefault(); ui.artifact[c.id] = t.dataset.artifact; ui.artQuery = ''; go(c.id, 'artifacts'); return; }
+    if (t.dataset.anchor) { e.preventDefault(); const el = document.getElementById(t.dataset.anchor); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
+    if (t.dataset.plan) { ui.plan = t.dataset.plan; rerender(); return; }
+    if (t.dataset.planView) { ui.planView = t.dataset.planView; rerender(); return; }
+    if (t.dataset.task) { const id = t.dataset.task; ui.openTasks.has(id) ? ui.openTasks.delete(id) : ui.openTasks.add(id); rerender(); return; }
+    if (t.dataset.req) { const id = t.dataset.req; ui.openReqs.has(id) ? ui.openReqs.delete(id) : ui.openReqs.add(id); rerender(); return; }
+    if (t.dataset.tests) { ui.tests = t.dataset.tests; rerender(); return; }
+    if (t.dataset.test) { const id = t.dataset.test; ui.openTests.has(id) ? ui.openTests.delete(id) : ui.openTests.add(id); rerender(); return; }
+    if (t.dataset.select && c) { ui.artifact[c.id] = t.dataset.select; rerender(); document.querySelector('.detail')?.scrollIntoView({ block: 'nearest' }); return; }
+    if (t.hasAttribute('data-show-report')) { ui.showReport = true; rerender(); return; }
+    if (t.hasAttribute('data-hide-report')) { ui.showReport = false; rerender(); return; }
+    if (t.hasAttribute('data-copy')) {
+      const pre = document.getElementById('source');
+      const done = () => { t.textContent = 'Copied'; setTimeout(() => (t.textContent = 'Copy source'), 1500); };
+      const select = () => { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); t.textContent = 'Selected: press Ctrl+C'; };
+      try { navigator.clipboard.writeText(pre.textContent).then(done, select); } catch { select(); }
+    }
+  });
+
+  app.addEventListener('keydown', e => {
+    const card = e.target.closest('[data-open]');
+    if (card && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); go(card.dataset.open, 'overview'); }
+  });
+
+  app.addEventListener('input', e => {
+    const keep = (id, apply) => { apply(e.target.value); rerender(); const el = document.getElementById(id); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } };
+    if (e.target.id === 'board-search') keep('board-search', v => (ui.query = v));
+    if (e.target.id === 'plan-search') keep('plan-search', v => (ui.planQuery = v));
+    if (e.target.id === 'test-search') keep('test-search', v => (ui.testQuery = v));
+    if (e.target.id === 'art-search') keep('art-search', v => (ui.artQuery = v));
+  });
+
+  addEventListener('hashchange', route);
+  route();
+})();
+</script>
+</body>
+</html>

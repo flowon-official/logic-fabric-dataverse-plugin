@@ -1,5 +1,5 @@
 {
-  "description": "The Logic Fabric workflow's hooks: the gate (Foundry writes only in the build stage, against the approved plan), the Dataverse check (commands that change Dataverse outside Foundry follow the same rules, are refused for test and production, and stop for the user's approval), the stage guard (stages move forward; approval hashes are never written by hand), approval hashes stamped when an approval is recorded, the active change's state at each prompt, and the export of each saved artifact's source into the change folder.",
+  "description": "The Logic Fabric workflow's hooks: the gate (Foundry writes only in the build stage, against the approved plan), the Dataverse check (commands that change Dataverse outside Foundry follow the same rules, are refused for test and production, and stop for the user's approval), the stage guard (stages move forward; approval hashes are never written by hand), approval hashes stamped when an approval is recorded, the active change's state at each prompt, the export of each saved artifact's source and link into the change folder, and the dashboard (logic-fabric/dashboard.html), kept current at the end of each turn once it has been written.",
   "hooks": {
     "PreToolUse": [
       {
@@ -62,6 +62,17 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/context.mjs\"",
             "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/dashboard.mjs\"",
+            "timeout": 60
           }
         ]
       }
