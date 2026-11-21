@@ -84,6 +84,13 @@ for activity tables). A plain variable is set with
 - `attributeType` is the column's metadata type: `String`, `Memo`, `Integer`, `Decimal`, `Money`, `Boolean`,
   `DateTime`, `Picklist`, `Lookup`, `State`, `Uniqueidentifier` + `AttributeMetadata`, prefixed with
   `Microsoft.Dynamics.CRM.`. Primary keys are `Uniqueidentifier`; `statecode` is `State`.
+- An operand has the column's type. An **ID (primary key) or lookup column compares with a record reference**: a
+  record input, a lookup value or a record's ID column (`<Action>#entity` with `prop: ["<table>id"]`), never text
+  (`toString(..., "D")` fails with "Type mismatch ... Expected type: EntityReference, Actual type: String"). A GUID
+  can't be made into a record reference in an expression (`guid` and `entityReference` around a GUID stay text).
+- An **empty operand turns the condition into "is empty"**. Pass an optional record input as it is: when it's empty
+  the ID condition matches nothing (an ID is never empty), so `ID = <Application> OR number = <ApplicationNumber>`
+  needs no fallback value. For a lookup column, "is empty" matches the rows without one: guard the query instead.
 - Operators in use: `Equal`, `NotEqual`, `GreaterThan`, `Like` (with `%`), `In`, `Null`, `OnOrBefore`, `OnOrAfter`.
 - With `multiplicity: "Single"` a missing record gives nulls: check `null` on the ID column and `RaiseError`.
 
