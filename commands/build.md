@@ -14,9 +14,11 @@ and `logic-fabric-dataverse:testing` skills. Stage 4 (Build) for the change in `
    2. Write the metadata, including the task's precondition.
    3. `validate`. Fix every error at its `path` and validate again, at most three times; then mark the task
       blocked in `plan.md` with the last error and stop.
-   4. `save` with `changeId` (the change folder name). The export hook writes the source to `artifacts/`.
+   4. `save` with `changeId` (the change folder name). The export hook writes the source to `artifacts/`. Give the
+      user the result's `url`, where they open what was saved: an artifact in its Logic Fabric designer, a table or
+      solution in the Power Apps maker portal, a reference row in Dataverse.
    5. Run the task's tests with `test` (personas from `workspace.yaml`). Fix and re-run, at most three times.
-   6. Tick the task in `plan.md` (or `spec.md` for a quick change; ticking keeps the approval) and append the artifact, its ID, version and test results to `build-log.md`.
+   6. Tick the task in `plan.md` (or `spec.md` for a quick change; ticking keeps the approval) and append the artifact, its ID, its link (`url`), version and test results to `build-log.md`.
 3. Go-live tasks run only after every unit test of what they make live has passed.
 4. Something the plan doesn't have (a new artifact, a changed signature, a data model change) is a **plan
    amendment**: write it into `plan.md` and ask the owner to approve the plan again. Corrections inside a task's
