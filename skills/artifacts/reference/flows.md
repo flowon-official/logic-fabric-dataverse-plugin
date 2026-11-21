@@ -16,7 +16,9 @@ A flow is `{"def": {"input": {...}, "output": {...}, "action": <Sequential>, "da
 "output": {"Stage": {"type":"String","list":false,"metaInfo":{}}}
 ```
 
-Types: `String`, `Integer`, `Decimal`, `Money`, `Boolean`, `DateTime`, `OptionSet`, `EntityReference`, `Entity`
+Types: `String`, `Integer`, `Decimal`, `Money`, `Boolean`, `DateTime` (with `dateTimeBehavior`: `UserLocal`,
+`TimeZoneIndependent` or `DateOnly`, matching the column), `OptionSet` (with `optionSetLogicalName` and `isGlobal`; a local
+choice also gives `entityLogicalName` and `propertyLogicalName`), `EntityReference` (with `entityLogicalName`), `Entity`
 (with `entityLogicalName` and `properties`). `list: true` makes a list.
 
 ## Actions
@@ -31,7 +33,7 @@ Actions run in key order. Every action has `"metaInfo": {}`.
 | `Switch` | `operand: expr`, `cases: [{expression: expr, actions: {actions}}]` | runs the first case whose `expression` equals `operand`; no case matches → nothing runs (there is no default: follow it with a `Condition`, or end with a case for the remaining value); an empty operand matches no case |
 | `Iterator` | `collection: expr`, `actions: {...}` | `<name>#current_item` inside |
 | `TryCatch` | `try: {actions}`, `catch: {actions}`, `finally: {actions}` | `<name>#error` in catch |
-| `NewVariable` | `typeMetadata: {typeCode, list, entityLogicalName?, properties?}` | variable `<name>` |
+| `NewVariable` | `typeMetadata: {typeCode, list, ...}` with the same extra keys as an input of that type (`dateTimeBehavior`, `optionSetLogicalName` and `isGlobal`, `entityLogicalName`, `properties`) | variable `<name>`, starting at its type's default, never empty: 0, `""`, `false`, 0001-01-01, a lookup with an empty ID |
 | `UpdateVariable` | see below | |
 | `ExecuteQuery` | `query: <query>`, `multiplicity: "Single"|"All"` | `<name>#query_result` |
 | `AggregateQuery` | `query`, `function: "count"|"sum"|...`, `column?` | `<name>#output:value` |
@@ -52,6 +54,11 @@ Actions run in key order. Every action has `"metaInfo": {}`.
 Validation set outputs (`RunLogicBlock` on a `ValidationSet`): `isValid` (Boolean) and `failedValidations`
 (list of messages) or `failedValidation` (first message), depending on the block's setting.
 
+A formula block's `result` can be empty, for example when the block reads a row that doesn't exist. Test it with a
+`Condition` on `{"type":"null","arg":{"type":"context","var":"<step>#output:result","prop":[]}}` straight after the
+step, and raise an error or take another path there. Don't rely on `if` or arithmetic to notice: `if` turns an empty
+branch into 0 (or `""`, `false`), so a missing value passes silently as 0.
+
 ### Writing a record
 
 Create a typed variable, set its columns, save it. To update, set the record's ID column too:
@@ -70,6 +77,17 @@ Create a typed variable, set its columns, save it. To update, set the record's I
 The variable's `properties` must include the ID column and the primary name column (`subject` and `activityid`
 for activity tables). A plain variable is set with
 `{"isPrimitive":true,"type":{"list":false,"type":"<tc>"},"property":{"value":{"operators":[{"operator":"set","args":{"value":e}}],"properties":{}}}}`.
+
+### Clearing a column
+
+Use the `unset` operator; the column is written empty when the row is saved:
+
+```json
+"fodemos_overriddenby": {"operators":[{"operator":"unset","args":{}}],"properties":{}}
+```
+
+Don't set a column from a variable that was never set: a new variable holds its type's default, not an empty value, so
+the save writes 0, `""` or 0001-01-01, or refuses a lookup to a row with an empty ID.
 
 ### Queries
 

@@ -53,3 +53,8 @@ Rules:
   deletion line in the plan, and is refused while something depends on it.
 - Choice values: use the publisher's option value range (for example 100000000 and up) and keep values stable once
   data exists.
+- **A column's `min`/`max` is checked before any logic runs.** Dataverse refuses a value outside the range with its own
+  message ("The value 0 of 'fodemos_termmonths' ... is outside the valid range") before a recipe or process sees the
+  row. So a business rule that checks the same range never fires. Keep each range in one place: in the column (Dataverse's
+  message, also shown on the form), or in a rule with a friendlier message and a column range wide enough to let the
+  value through. The spec says which, and its acceptance criteria use values the column accepts.

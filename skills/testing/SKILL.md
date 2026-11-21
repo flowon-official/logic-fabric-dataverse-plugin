@@ -57,7 +57,8 @@ teardown: delete-created
 
 `test` with the change's test cases (read the YAML files and pass them as JSON), the personas from
 `workspace.yaml`, and `changeId`. It returns one result per case: passed, failed (expected and actual), errored
-(the message) or skipped (retired), with timings. Write `test-report.md` from it, including the traceability matrix.
+(the message) or skipped (retired), with timings. A `when` that Dataverse refuses (a validation recipe, a column's
+range or required level) is the case's outcome, checked against `expect.error`. Write `test-report.md` from it, including the traceability matrix.
 
 Tests run only where `workspace.yaml` has `tests_allowed: true`. Never against production.
 
@@ -75,7 +76,7 @@ when a case fails). When the user asks for a pipeline, add this step after the i
 | Decision tree | every leaf |
 | Validation set | each message triggered once, plus one all-valid case |
 | Logic flow | happy path, each `Condition` branch, each `RaiseError`, writes asserted on rows, each REST call's failure |
-| Logic recipe | each guard true and false; an update to a non-filtering column does not trigger it; a failed validation blocks the save |
+| Logic recipe | each guard true and false; an update to a non-filtering column does not trigger it; a failed validation blocks the save (with every other column inside its range: Dataverse checks ranges first) |
 | Business process | every transition and end, escalation with a past due date, hook effects, published and active |
 | Event and handler | publishing produces the handler's effect within the budget |
 | Schedule | its flow run twice does the work once |
