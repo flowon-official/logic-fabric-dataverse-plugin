@@ -35,7 +35,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "mcp__plugin_logic-fabric-dataverse_foundry__save",
+        "matcher": "mcp__plugin_logic-fabric-dataverse_foundry__(save|delete)",
         "hooks": [
           {
             "type": "command",

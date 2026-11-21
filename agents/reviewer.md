@@ -17,7 +17,9 @@ delete anything: your tools only read.
   `includeMetadata` over a whole project is too large to read).
 - The tables and choices it uses (`schema`), the roles, teams and queues its precondition names (`security`,
   `lookup`).
-- The rules for each kind: `reference` `topic: "rules"`, `kind: "<kind>"`. In governance mode, also
+- The rules for each kind: `reference` `topic: "rules"`, `kind: "<kind>"` (`kind: "project"` for the project-wide
+  ones). Authoring rules (LF-) win over Logic Guard's (WF-, BR- and so on) where they disagree: a guard clause (a
+  `Condition` whose one branch only raises an error) is correct, not a dead branch. In governance mode, also
   `logic-fabric/rules.yaml` (rules switched off, severities changed, the project's own plain-language rules) and
   the `analyze` `kind: "governance"` result you are given.
 

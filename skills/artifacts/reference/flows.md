@@ -28,6 +28,7 @@ Actions run in key order. Every action has `"metaInfo": {}`.
 |---|---|---|
 | `Sequential` | `actions: {name: action}` | |
 | `Condition` | `condition: expr`, `true: {actions}`, `false: {actions}` | |
+| `Switch` | `operand: expr`, `cases: [{expression: expr, actions: {actions}}]` | runs the first case whose `expression` equals `operand`; no case matches → nothing runs (there is no default: follow it with a `Condition`, or end with a case for the remaining value); an empty operand matches no case |
 | `Iterator` | `collection: expr`, `actions: {...}` | `<name>#current_item` inside |
 | `TryCatch` | `try: {actions}`, `catch: {actions}`, `finally: {actions}` | `<name>#error` in catch |
 | `NewVariable` | `typeMetadata: {typeCode, list, entityLogicalName?, properties?}` | variable `<name>` |

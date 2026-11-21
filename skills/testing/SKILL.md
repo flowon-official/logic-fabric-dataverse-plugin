@@ -34,6 +34,12 @@ teardown: delete-created
 
 - `{run}` is the run's tag; `{alias}` is the ID of a fixture row (`as: claim`). Every fixture's primary name
   carries `TST-{run}`.
+- Who does what: fixtures are created as Foundry's signed-in user (they set the scene, so a persona without create
+  rights can still be tested); `when` and the target run as the case's `runAs` persona; `records` are checked as
+  Foundry's user. A fixture that a persona must own (an assessment owned by the analyst, an application prepared by
+  someone else) carries its own `runAs`: `- create: {...}` with `runAs: credit_analyst` next to `create`.
+- A flow's `RaiseError` or a refused precondition is a failed run with its code (`expect.error`), whatever step it
+  comes from.
 - Values: text, numbers, `true`/`false`, `{choice: n}`, `{money: n}`, `{lookup: {table, id}}`, `"{alias}"` for a
   lookup to a fixture.
 - Assertions: `output` (equals; numbers compare to two decimals for Currency; dates by value, so `"2026-11-27"`

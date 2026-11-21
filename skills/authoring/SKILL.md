@@ -155,6 +155,19 @@ Fetch what you need instead of guessing; the server's reference is the source of
 - **No hard-coded IDs, thresholds or amounts**: look records up by key; thresholds go in configurations, formula
   blocks or parameter tables.
 - **Errors for callers**: end a failed flow with `RaiseError` and a message a user or agent understands.
+- **Guard clauses are the standard check**: a `Condition` whose one branch only raises an error and whose other branch
+  is empty (the flow carries on) is correct, not a dead branch.
+
+**The rule catalog** (`reference` `topic: "rules"`) holds two kinds of rules. Rules with source `authoring` (LF-) are
+how you build; rules with source `guard` (WF-, BR- and so on) are what Logic Guard reports when it reviews a project.
+Where they disagree the authoring rule wins. Only rules marked `check: "code"` are checked by Foundry (as `validate`
+warnings); the others are judgment for you and the reviewer, not reasons a save fails, so never bend correct logic
+to dodge one.
+
+**Probing**: try an expression or a step's shape with `validate`, which saves nothing. When you must run something to
+learn how it behaves, save it as a clearly temporary artifact (`Zz_Probe...`) in this change and delete it when done:
+a change may delete what it created itself without a plan line. If a result looks like a platform bug, prove it with
+the smallest probe before working around it, and record it in `build-log.md`.
 
 ## 6. Preconditions
 

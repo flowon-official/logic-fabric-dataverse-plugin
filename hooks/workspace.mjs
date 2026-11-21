@@ -130,6 +130,21 @@ export function readEnvironments(workspace) {
   return environments;
 }
 
+// The artifacts the active change created (not ones it updated), as export.mjs lists them in
+// <change>/artifacts/created.json: [{ kind, name, id }]. A change may delete these without a plan line.
+export function createdFile(changeFolder) {
+  return join(changeFolder, 'artifacts', 'created.json');
+}
+
+export function readCreated(changeFolder) {
+  try {
+    const file = createdFile(changeFolder);
+    return existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : [];
+  } catch {
+    return [];
+  }
+}
+
 // The stages in order; a change moves forward through them.
 export const STAGES = ['prompt', 'spec', 'plan', 'build', 'review', 'acceptance', 'accepted'];
 
