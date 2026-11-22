@@ -58,7 +58,8 @@ teardown: delete-created
 `test` with the change's test cases (read the YAML files and pass them as JSON), the personas from
 `workspace.yaml`, and `changeId`. It returns one result per case: passed, failed (expected and actual), errored
 (the message) or skipped (retired), with timings. A `when` that Dataverse refuses (a validation recipe, a column's
-range or required level) is the case's outcome, checked against `expect.error`. Write `test-report.md` from it, including the traceability matrix.
+range or required level) is the case's outcome, checked against `expect.error`. An inactive fixture gives
+`statecode` and `statuscode` (as `choice` values) in its `create`: the runner creates the row, then sets its state. Write `test-report.md` from it, including the traceability matrix.
 
 Tests run only where `workspace.yaml` has `tests_allowed: true`. Never against production.
 

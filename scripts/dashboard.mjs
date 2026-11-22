@@ -668,7 +668,7 @@ function markdown(text, names = new Set()) {
       const head = cells(line);
       const rows = [];
       for (i += 2; i < lines.length && /^\s*\|/.test(lines[i]); i++) rows.push(cells(lines[i]));
-      html.push(`<div class="table-wrap"><table><thead><tr>${head.map(c => `<th>${inline(c.trim(), names)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${head.map((_, k) => `<td>${inline((r[k] || '').trim(), names)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
+      html.push(`<div class="table-wrap"><table>${columnWidths(head, rows)}<thead><tr>${head.map(c => `<th>${inline(c.trim(), names)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${head.map((_, k) => `<td>${inline((r[k] || '').trim(), names)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
       continue;
     }
     if (/^\s*>/.test(line)) {
@@ -698,6 +698,20 @@ function markdown(text, names = new Set()) {
   }
 
   return { html: html.join('\n'), toc };
+}
+
+// Each column's share of a table's width, from how much text its cells hold on average (between 8 and 120
+// characters), so a column of sentences, such as the build log's results, gets the room and short ones don't.
+function columnWidths(head, rows) {
+  if (head.length < 3) return '';
+  const plain = c => String(c || '').replace(/`|\*\*/g, '').trim();
+  const weights = head.map((h, k) => {
+    const values = rows.map(r => plain(r[k])).filter(Boolean);
+    const average = values.length ? values.reduce((sum, v) => sum + v.length, 0) / values.length : plain(h).length;
+    return Math.min(120, Math.max(8, average, plain(h).length));
+  });
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  return `<colgroup>${weights.map(w => `<col style="width:${(100 * w / total).toFixed(1)}%">`).join('')}</colgroup>`;
 }
 
 function renderList(lines, names) {

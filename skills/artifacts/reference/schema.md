@@ -42,6 +42,12 @@ Rules:
   minute, so a table save stops starting new columns after 40 seconds and returns the rest in `pending` with a
   `note`. Save each pending column with kind `column` and `options.table`, one call at a time. Saving the whole
   table again also works: columns already saved and unchanged are skipped.
+- **Change a table, column or choice from what it is now.** A save replaces the labels, required level and settings
+  it isn't given, so `get` it first: `kind: "column"` with `table` (or `name: "<table>.<column>"`), `kind: "table"`,
+  `kind: "choice"` or `kind: "relationship"`. It comes back as the definition `save` takes: change what the plan says
+  and save the whole definition. A `note` says when Foundry can't save it (a status or owner column, a one-to-many
+  relationship, which changes through its lookup column). For what this change created, `artifacts/schema/` has
+  the same definition.
 - **After a timeout or a "busy" error, read before you save again.** The change may have gone through: read the
   table with `schema` (`query: "table"`), then save only what is missing.
 - Save the schema tasks first, then `release` `action: "publishCustomizations"`. Publishing often takes Dataverse
