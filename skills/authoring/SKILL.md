@@ -117,12 +117,21 @@ run themselves.** Do the task with their approval:
 3. On approval, run it yourself. The plugin's Dataverse hook shows the command in Claude Code's approval prompt;
    it refuses commands outside the build stage and against test or production environments.
 4. The command reads the connection string from the variable `workspace.yaml` names for the environment
-   (`connection`), passed as `"$env:<VARIABLE>"` (PowerShell) or `"$<VARIABLE>"` (bash). Never read, print or copy
-   its value. If the variable isn't set, ask the user to set it by typing `! $env:<VARIABLE> = "..."` in the prompt.
+   (`connection`), passed with `-c` as `"$env:<VARIABLE>"` (PowerShell) or `"$<VARIABLE>"` (bash). Never read, print
+   or copy its value, and don't copy it into `FLOWON_CONNECTION_STRING` either (version 1.2.0 of the tool prints that
+   variable in its help, after any wrong option). If the variable isn't set, ask the user to set it outside Claude
+   Code and restart it, never with a `!` command in the prompt: that puts the secret in the conversation.
 5. Record the command and its result in `build-log.md`. If the user declines, or a permission check refuses the
    command, mark the task blocked in `plan.md` (`Blocked: <reason>` as the first line under it, box unticked) and go
-   on with the next one: never look for another
-   way around it.
+   on with the next one: never look for another way around it, and don't offer one. A route that was refused stays
+   refused.
+
+**When neither Foundry nor `flowon-dynamics` can do a task**, mark it blocked in `plan.md` with the refusal
+(Foundry's or Dataverse's message), note it in `build-log.md` as something Foundry can't do yet, and ask the user
+(`AskUserQuestion`) whether they'll make that change themselves in the maker portal. If they do, read it back with
+`schema` or `get`, remove the `Blocked:` line, tick the task and go on. Never make the change another way yourself:
+not in the maker portal (a browser pane included), and not through the Web API, an SDK script or a connection
+string. Changes made that way skip the plan check, the Dataverse hook and the export to `artifacts/`.
 
 Security roles created this way aren't in the project's solution: they move to test and production as
 `security.xml` (`export-security` here, `import -sf` there) in the pipeline. Commit the file with the change.
