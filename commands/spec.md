@@ -5,9 +5,11 @@ argument-hint: "[approve]"
 
 Follow the `logic-fabric-dataverse:authoring` skill. Stage 2 (Spec) for the change in `logic-fabric/.active`.
 
-If the argument is `approve`: confirm the owner is the one approving, record `spec_approved_by` and
-`spec_approved_at` in `status.yaml` with `spec_sha256` empty (the approval hook stamps it), set `stage: plan` (or, for a quick
-change, go straight to writing the plan section and approve both), and ask the owner to commit the change folder.
+If the argument is `approve`: ask Foundry for the owner's approval (`release`, `action: "approve"`, `options.gate:
+"spec"`, `options.text` the full `spec.md`, and `options.quick: true` for a quick change whose spec carries its task
+list; see the authoring skill). Once Foundry reports it approved, record `spec_approved_by` and `spec_approved_at` in
+`status.yaml` with `spec_sha256` empty (the approval hook stamps it), set `stage: plan` (or, for a quick change, go
+straight to the build), and ask the owner to commit the change folder. If the owner declined, ask what to change.
 Stop there.
 
 Otherwise:

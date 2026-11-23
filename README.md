@@ -102,7 +102,8 @@ message. Nothing is built or saved in this stage.
   then it is assigned to the Senior Adjusters team and the claims manager is notified.*
 
 Claude checks the spec (criteria for every requirement, no missing column, role or team, no "to be decided") and
-shows you a summary. Approve it with `/logic-fabric-dataverse:spec approve`, then commit the change folder.
+shows you a summary. Approve it with `/logic-fabric-dataverse:spec approve`: Logic Foundry asks you to confirm in
+Claude Code's own dialog and records your approval (see [Approvals](#approvals)). Then commit the change folder.
 
 ### Build plan
 
@@ -116,7 +117,7 @@ It also writes the test cases in `tests/`: every acceptance criterion, the bound
 failures, and for every access rule a user who may run it and one who may not.
 
 The plan's summary tells you what will exist, what changes, what goes live and when, what is deleted, and the
-risks. Approve it with `/logic-fabric-dataverse:plan approve`, then commit.
+risks. Approve it with `/logic-fabric-dataverse:plan approve`, confirm in Foundry's dialog, then commit.
 
 ### Build
 
@@ -181,6 +182,22 @@ The plugin's hooks keep the workflow in place, whatever Claude is asked:
 - At every prompt, Claude is told the active change, its stage and whether its approvals still hold.
 
 Test and production never change from Claude Code: they change through your solutions and pipelines.
+
+### Approvals
+
+With Logic Foundry 2.1.0 or later and the **Logic Fabric Foundry** solution (Logic Fabric 1.0.0.43 or later) in your
+development environment, you give each approval to Foundry, not to Claude:
+
+- Foundry asks you in Claude Code's own dialog, which Claude can't answer: what the spec or plan allows, the deletions
+  it lists, its text and its fingerprint. A client without that dialog gets a link to Foundry's approval page, where
+  you sign in with your work account and approve or decline.
+- Foundry records the approved text, its fingerprint, you and the time in the **Foundry Changes** table (the Logic
+  Fabric Foundry app).
+- A project the workflow creates refuses every change through Foundry that doesn't belong to a change whose plan you
+  approved, and a delete the plan doesn't list, whichever client makes it. Foundry never switches this off: a person
+  does, on the project's **Foundry Project Setting**.
+
+Without the solution, Claude asks you in the session as before, and the plugin's hooks keep the rules.
 
 ### The change folder
 
@@ -275,6 +292,9 @@ For production, run Foundry with `FOUNDRY_READ_ONLY=true`: it then refuses every
 | The same error after your administrator fixed it | Claude Code remembers sign-in details from the first attempt. Close all Claude Code sessions, remove the server's entry under `mcpOAuth` in `~/.claude/.credentials.json` (on macOS, in the Keychain), then sign in again. |
 | "There is no active Logic Fabric change" or "... is in the spec stage" | The gate allows changes to Foundry only while a change is being built. Run `/logic-fabric-dataverse:status`. |
 | "plan.md changed since it was approved" | Someone edited the plan. Ask the owner to approve it again. |
+| "Project ... needs an approved change for every write" or "Change ... has no approval in Foundry" | Foundry keeps the gate for this project. Approve the plan with `/logic-fabric-dataverse:plan approve` and confirm in Foundry's dialog. |
+| "This environment doesn't have the Logic Fabric Foundry solution" | Foundry can't record approvals there; Claude asks you in the session instead. Install Logic Fabric 1.0.0.43 or later to have Foundry keep them. |
+| `AADSTS50011` on Foundry's approval page | Foundry's server app needs the web redirect URI `https://<your Foundry>/approvals/signin-oidc` with ID tokens. The deployment templates (1.10.0 or later) add it. |
 | "Access denied" or missing records | Claude acts as you. Ask your Dataverse administrator for the privileges you need. |
 
 ## Privacy and license

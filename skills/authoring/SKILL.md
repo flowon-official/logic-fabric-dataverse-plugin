@@ -55,11 +55,22 @@ Templates are in [templates/](templates/). Rules:
   closed: further work on what it built, undoing it included, is a **new change** (`/logic-fabric-dataverse:start`).
   The plugin's **stage hook** refuses any other move back, any hand-written `*_sha256`, and a `retired:` line in
   a change's own tests.
-- An approval is the owner saying so in the session. Record `<gate>_approved_by` and `<gate>_approved_at` in
-  `status.yaml` and leave `<gate>_sha256` empty: the plugin's **approval hook** stamps it with the approved file's
-  hash as soon as the file is saved (ticking a task's checkbox doesn't count as a change; editing its text does).
-  Then ask the owner to commit. To approve again after an amendment, record the
-  new approval with `<gate>_sha256` emptied.
+- **An approval is the owner's, given to Foundry, not to you.** Call `release` with `action: "approve"`, the
+  `changeId`, `project` (also a project the plan will create), `options.gate` (`spec` or `plan`), `options.text` (the
+  file's full text as saved: read it, don't retype it) and, for a quick change whose spec builds without a plan,
+  `options.quick: true`. Foundry asks the owner in the client's own dialog and records the approval in Dataverse. A
+  client without that dialog gets Foundry's approval page instead: either the client opens it, or Foundry answers with
+  a link. Give the owner the link (they sign in and approve or decline there; you can't), wait until they say they
+  answered, then call `approve` again with the same text: it reports the approval, or asks again. When Foundry
+  reports the approval, record `<gate>_approved_by` and `<gate>_approved_at` in `status.yaml` and leave
+  `<gate>_sha256` empty: the plugin's **approval hook** stamps it with the approved file's hash, the same hash Foundry
+  returns (ticking a task's checkbox doesn't count as a change; editing its text does). Then ask the owner to commit.
+  If the owner declines, nothing is approved: ask what to change. To approve again after an amendment, approve
+  through Foundry again and record the new approval with `<gate>_sha256` emptied.
+- Only when Foundry answers that this environment doesn't have the Logic Fabric Foundry solution, or that it can't
+  ask the owner at all (no dialog and no approval page), take the approval in the session instead
+  (`AskUserQuestion`), and say in `build-log.md` that Foundry didn't record it. Never record an approval the owner
+  didn't give, and never open or answer the approval page yourself.
 - At every prompt the **context hook** reports the active change, its stage and whether `spec.md` and `plan.md`
   still match their approval. If one has changed since approval, the gate reopens: say so and stop.
 - The plugin's **gate hook** refuses Foundry writes (`save`, `delete`, `release`, `test`, `run` of a flow) unless
@@ -67,6 +78,9 @@ Templates are in [templates/](templates/). Rules:
   and no approved file has changed since. It refuses a `delete` unless an approved file has a line naming the
   target, written as `Delete <kind> <name>: <reason>` in the plan's summary. Don't work around it: never move `stage` or edit an approval to get past it.
   Something the approved plan doesn't cover is a plan amendment (approved again) during the build, or a new change.
+- **Foundry keeps the same gate itself** for a project whose writes need approved changes (new projects get it, see
+  below): it refuses a write without the `changeId` of a change whose plan the owner approved through Foundry, and a
+  delete the approved plan doesn't list (an artifact the change created excepted). Pass `changeId` on every write.
 - The **Dataverse hook** applies the same rules to commands that change Dataverse outside Foundry (the
   `flowon-dynamics` tool's imports and other writing commands, the Flowon PowerShell module, scripts with a
   connection string or Web API writes), refuses them for test and production environments, and stops each one for
@@ -100,8 +114,11 @@ Pass the change ID (`changeId`) on every write. Read an artifact's `version` wit
 
 A new project is built from nothing in this order, as the plan's first tasks: `save` `kind: "solution"` by its
 unique name (no project; `options.publisher` names an existing publisher by unique name or prefix, or describes a
-new one as `{ "name", "prefix", "title" }`), then `save` `kind: "project"` with `options.solution`. Validate each
-first. Never create them before the build, and never name another project to get past a missing one.
+new one as `{ "name", "prefix", "title" }`), then `save` `kind: "project"` with `options.solution` and
+`options.requireApprovedChanges: true` (from then on Foundry refuses the project's writes without an approved change),
+both with the `changeId`. Validate each first. Never create them before the build, and never name another project to
+get past a missing one. For an existing project, the owner decides whether to switch it on (the same option on a save
+of the project). Foundry never switches it off: only a person does, in Dataverse (the project's Foundry Project Setting record).
 
 ### Work Foundry can't do
 
