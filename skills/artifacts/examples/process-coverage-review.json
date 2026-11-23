@@ -663,7 +663,22 @@
     ]
    }
   ],
-  "gateways": [],
+  "gateways": [
+   {
+    "uniqueName": "reviewOutcome",
+    "kind": "exclusive",
+    "metaInfo": {
+     "title": "Review outcome"
+    }
+   },
+   {
+    "uniqueName": "denialOutcome",
+    "kind": "exclusive",
+    "metaInfo": {
+     "title": "Denial approved?"
+    }
+   }
+  ],
   "ends": [
    {
     "uniqueName": "covered",
@@ -681,6 +696,24 @@
   "transitions": [
    {
     "source": "adjusterReview",
+    "target": "reviewOutcome",
+    "guard": {
+     "type": "const",
+     "tc": "Boolean",
+     "value": true
+    }
+   },
+   {
+    "source": "overdueReview",
+    "target": "reviewOutcome",
+    "guard": {
+     "type": "const",
+     "tc": "Boolean",
+     "value": true
+    }
+   },
+   {
+    "source": "reviewOutcome",
     "target": "covered",
     "guard": {
      "type": "isEqualTo",
@@ -708,7 +741,7 @@
     }
    },
    {
-    "source": "adjusterReview",
+    "source": "reviewOutcome",
     "target": "denialApproval",
     "guard": {
      "type": "isEqualTo",
@@ -736,91 +769,7 @@
     }
    },
    {
-    "source": "adjusterReview",
-    "target": "awaitEvidence",
-    "guard": {
-     "type": "isEqualTo",
-     "args": [
-      {
-       "type": "context",
-       "var": "@Process.Stage.Instance.Task",
-       "prop": [
-        "fodemos_outcome"
-       ]
-      },
-      {
-       "type": "const",
-       "tc": "OptionSet",
-       "value": {
-        "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
-        "isGlobal": false,
-        "isTwoOptions": false,
-        "entityLogicalName": "fodemos_claimtask",
-        "propertyLogicalName": "fodemos_outcome",
-        "optionSetValue": 326950004
-       }
-      }
-     ]
-    }
-   },
-   {
-    "source": "overdueReview",
-    "target": "covered",
-    "guard": {
-     "type": "isEqualTo",
-     "args": [
-      {
-       "type": "context",
-       "var": "@Process.Stage.Instance.Task",
-       "prop": [
-        "fodemos_outcome"
-       ]
-      },
-      {
-       "type": "const",
-       "tc": "OptionSet",
-       "value": {
-        "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
-        "isGlobal": false,
-        "isTwoOptions": false,
-        "entityLogicalName": "fodemos_claimtask",
-        "propertyLogicalName": "fodemos_outcome",
-        "optionSetValue": 326950001
-       }
-      }
-     ]
-    }
-   },
-   {
-    "source": "overdueReview",
-    "target": "denialApproval",
-    "guard": {
-     "type": "isEqualTo",
-     "args": [
-      {
-       "type": "context",
-       "var": "@Process.Stage.Instance.Task",
-       "prop": [
-        "fodemos_outcome"
-       ]
-      },
-      {
-       "type": "const",
-       "tc": "OptionSet",
-       "value": {
-        "optionSetLogicalName": "fodemos_claimtask_fodemos_outcome",
-        "isGlobal": false,
-        "isTwoOptions": false,
-        "entityLogicalName": "fodemos_claimtask",
-        "propertyLogicalName": "fodemos_outcome",
-        "optionSetValue": 326950002
-       }
-      }
-     ]
-    }
-   },
-   {
-    "source": "overdueReview",
+    "source": "reviewOutcome",
     "target": "awaitEvidence",
     "guard": {
      "type": "isEqualTo",
@@ -858,6 +807,15 @@
    },
    {
     "source": "denialApproval",
+    "target": "denialOutcome",
+    "guard": {
+     "type": "const",
+     "tc": "Boolean",
+     "value": true
+    }
+   },
+   {
+    "source": "denialOutcome",
     "target": "denied",
     "guard": {
      "type": "isEqualTo",
@@ -885,7 +843,7 @@
     }
    },
    {
-    "source": "denialApproval",
+    "source": "denialOutcome",
     "target": "adjusterReview",
     "guard": {
      "type": "isEqualTo",

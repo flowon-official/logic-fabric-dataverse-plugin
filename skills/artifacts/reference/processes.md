@@ -4,7 +4,7 @@ A business process (Logic Fabric Orchestrator) runs on one record - a coverage d
 investigation - and moves it through **stages**. Each stage creates a **task** for a team or user; when the task
 is completed and the stage's completion criteria hold, the process follows the first transition whose guard is
 true. Full example: [../examples/process-coverage-review.json](../examples/process-coverage-review.json)
-(adjuster review, evidence wait, supervisor approval, escalation). Its team IDs are zeros: look up real teams with `security` `query: "teams"` or `lookup`.
+(adjuster review, its outcome as an exclusive gateway, evidence wait, supervisor approval, escalation). Its team IDs are zeros: look up real teams with `security` `query: "teams"` or `lookup`.
 
 ## Tools
 
@@ -78,8 +78,20 @@ In process expressions, `@Process.Entity` is the record (only the `processEntity
 | `parallel` | every outgoing transition, no guards | waits for every incoming transition |
 | `inclusive` | every transition whose guard is true, or the default | waits until no other active branch can arrive |
 
-A transition is `{"source","target","guard"}`; mark one `"isDefault": true` (no guard) as the fallback. Stages can
-transition directly on task outcomes without a gateway, as in the example. Every path must reach an `end`.
+A transition is `{"source","target","guard"}`. A transition leaving an exclusive or inclusive gateway can instead be
+the fallback: `"isDefault": true`, with no guard. Every path must reach an `end`.
+
+**Branch with a gateway, not from the stage.** A stage has one outgoing transition, to the next stage, an `end` or
+a gateway, with the guard `{"type":"const","tc":"Boolean","value":true}`: the stage only moves on when its task is
+completed and its criteria hold. Where the task's outcome decides the path, the stage leads to an `exclusive`
+gateway, and the gateway's transitions carry the guards on the outcome, as in the example. The designer and the
+process viewer then show the decision as a decision. An exclusive gateway sees the task of the stages leading into
+it (`@Process.Stage.Instance.Task`) when they share the task table and columns, as a review stage and its overdue
+stage do.
+
+- Give a gateway a default only for a real "anything else" path. Without one, an outcome no guard matches stops the
+  process with an error.
+- Use `parallel` for work that happens at the same time, and `inclusive` for optional work that can run alongside.
 
 ## Design notes
 
