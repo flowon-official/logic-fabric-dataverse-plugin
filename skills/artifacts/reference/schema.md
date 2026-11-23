@@ -5,13 +5,21 @@ with `schema`. Every component is created in the project's solution with the pub
 
 | Kind | `name` | Definition (`metadata`) |
 |---|---|---|
-| `table` | `<prefix>_<name>` | `displayName`, `pluralName`, `description`, `ownership` (`user`/`organization`), `primaryName` {`name`, `displayName`, `maxLength`}, `features` {`notes`, `activities`, `queues`, `audit`, `changeTracking`, `connections`, `duplicateDetection`, `quickCreate`: true/false}, `columns` [ ... ] |
+| `table` | `<prefix>_<name>` | `displayName`, `pluralName`, `description`, `ownership` (`user`/`organization`), `isActivity` (true for an activity table, see below), `primaryName` {`name`, `displayName`, `maxLength`}, `features` {`notes`, `activities`, `queues`, `audit`, `changeTracking`, `connections`, `duplicateDetection`, `quickCreate`: true/false}, `columns` [ ... ] |
 | `column` | `<prefix>_<name>`, with `options.table` | `type` (`text`, `memo`, `integer`, `decimal`, `currency`, `boolean`, `date`, `datetime`, `choice`, `choices`, `lookup`), `displayName`, `description`, `required` (`none`/`recommended`/`required`), `maxLength`, `precision`, `min`, `max`, `trueLabel`/`falseLabel`, `choice` {`global`: name} or {`options`: [{`value`, `label`}]}, `target` and `relationshipName` (lookup), `cascade` |
 | `choice` | `<prefix>_<name>` | a global choice: `displayName`, `description`, `options` [{`value`, `label`}] |
 | `relationship` | `<prefix>_<name>` | many-to-many: `referenced`, `referencing`, `intersect` (one-to-many: save a lookup column) |
 | `record` | a label, with `options.table` | reference rows: `key` (an ID or {column: value}), `values` {column: value}. Each value takes its column's type: numbers for number and currency columns (`{"money": n}` also works), `"2026-01-01"` for a date, `"2026-01-01T09:00:00Z"` for a date and time, `{"choice": n}` or the choice's label, `[n, ...]` for a multi-choice, `{"lookup": {"table", "id"}}` (or the ID, for a lookup to one table) |
 
 Foundry refuses a setting it doesn't know instead of ignoring it, and names the right one.
+
+An **activity table** (`isActivity: true`, for tasks, approvals or other activities about a row) follows
+Dataverse's rules: user ownership, `notes` on, `activities` off, and the primary column `subject` (leave
+`primaryName.name` out). Foundry makes it available offline, as Dataverse requires; `validate` refuses a definition
+that asks otherwise. Whether a table is an activity table is set when it is created and can't change afterwards.
+Dataverse takes several minutes to create or delete one: `save` (or `delete`) returns before it's done with a `note`
+and, for a save, the columns in `pending`. Read the table with `schema` every minute or two until it exists (or is
+gone) before the next schema save, then save the pending columns.
 
 ## Table features: decide them from how the table is used
 

@@ -78,7 +78,7 @@ Templates are in [templates/](templates/). Rules:
 | Tool | Use it to |
 |---|---|
 | `find` | List or search artifacts by kind, project and text (`kinds`, `project`, `text`, `cursor`) |
-| `get` | Read one artifact by kind and name (`include`: `dependencies`, `versions`, `handlers`, `source`) |
+| `get` | Read one artifact by kind and name (`include`: `dependencies`, `versions`, `handlers`, `source`). With dependencies, `usedBy` lists what uses it, callers included; a flow's or block's own-kind dependency list is what it calls |
 | `validate` | Check metadata or a schema definition without saving. Always before `save` |
 | `save` | Create or update an artifact or schema component (upsert by project and name; `ifVersion`, `changeId`) |
 | `delete` | Delete, only with an approved plan line; refused while something depends on it |

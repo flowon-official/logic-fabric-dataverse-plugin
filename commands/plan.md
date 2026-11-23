@@ -23,10 +23,11 @@ Otherwise:
 3. Each task: inputs and outputs, the `Precondition:` line (entry point with its policy, condition and code, or
    internal and why), dependencies, test case IDs, done-when. A task Foundry can't do (security roles) says
    `Tool: flowon-dynamics` with the command and its preview, so the owner approves it with the plan; the build still
-   asks before running it. Changes to existing artifacts list their consumers
-   (`get` with dependencies) and add those consumers' tests to the regression set. Every deletion gets its own line
-   in the summary: `Delete <kind> <name>: <reason>`, a task that checks nothing depends on it (`get` with
-   dependencies), an `absent` test, and a task retiring the regression tests in `logic-fabric/baseline/tests/`
+   asks before running it. Changes to existing artifacts list their consumers (`usedBy` of `get` with
+   dependencies; a flow's or block's own-kind dependency list holds what it calls, not its callers) and add those
+   consumers' tests to the regression set. Every deletion gets its own line
+   in the summary: `Delete <kind> <name>: <reason>`, a task that checks nothing uses it (`usedBy` empty), an
+   `absent` test, and a task retiring the regression tests in `logic-fabric/baseline/tests/`
    that target it (add `retired: <this change>` to each; never delete test files).
 4. Write `tests/<id>.yaml` for every acceptance criterion and every case the `testing` skill's table asks for,
    including allowed and refused personas for each precondition.
