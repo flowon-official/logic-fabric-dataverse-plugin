@@ -293,6 +293,7 @@ For production, run Foundry with `FOUNDRY_READ_ONLY=true`: it then refuses every
 | "There is no active Logic Fabric change" or "... is in the spec stage" | The gate allows changes to Foundry only while a change is being built. Run `/logic-fabric-dataverse:status`. |
 | "plan.md changed since it was approved" | Someone edited the plan. Ask the owner to approve it again. |
 | "Project ... needs an approved change for every write" or "Change ... has no approval in Foundry" | Foundry keeps the gate for this project. Approve the plan with `/logic-fabric-dataverse:plan approve` and confirm in Foundry's dialog. |
+| Claude says Foundry's `release` tool has no `approve` action | The session started before your Foundry was updated to 2.1 or later and still has its old tool list. Restart Claude Code (or reconnect the `foundry` server in `/mcp`). |
 | "This environment doesn't have the Logic Fabric Foundry solution" | Foundry can't record approvals there; Claude asks you in the session instead. Install Logic Fabric 1.0.0.43 or later to have Foundry keep them. |
 | `AADSTS50011` on Foundry's approval page | Foundry's server app needs the web redirect URI `https://<your Foundry>/approvals/signin-oidc` with ID tokens. The deployment templates (1.10.0 or later) add it. |
 | "Access denied" or missing records | Claude acts as you. Ask your Dataverse administrator for the privileges you need. |

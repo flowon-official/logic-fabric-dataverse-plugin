@@ -77,7 +77,7 @@ if (testFile) {
   const retired = text => (text?.match(/\bretired["']?\s*:/g) || []).length;
 
   if (retired(after) > retired(before)) {
-    deny(`A change can't retire its own tests. If a test fails, fix the artifact; if the test is wrong, amend the plan and get it approved again. Only a later change that removes or replaces what a test covers retires its regression copy in logic-fabric/baseline/tests/.`);
+    deny(`Tests are retired only in their regression copies in logic-fabric/baseline/tests/, never in a change folder. A change can't retire its own tests: if a test fails, fix the artifact; if the test is wrong, amend the plan and get it approved again. A test of an earlier change that isn't accepted yet has no baseline copy: retire that copy once the earlier change is accepted (until then a regression run lists the test as replaced), and note it in the build log's open items.`);
   }
   process.exit(0);
 }

@@ -2,6 +2,8 @@
 // of a logic flow, which commits) are allowed only when the repository uses the workflow's change folders and:
 // the active change is in the build stage (review for fix tasks; acceptance for test runs), the plan is approved
 // (the spec, for a quick change), no approved file (spec or plan) has changed since, and a delete is listed in one.
+// release with action "approve" is no write: it asks Foundry to ask the owner, which is how a spec or plan (or an
+// amended one) gets approved, so it passes in every stage.
 // A repository without logic-fabric/workspace.yaml hasn't adopted the workflow, and nothing is refused.
 import { readFileSync } from 'node:fs';
 import { OFFERING, buildRefusal, findWorkspace, isOwnWorkspace, readCreated, readInput, workspaceOffering } from './workspace.mjs';
@@ -22,7 +24,8 @@ function deny(reason) {
 const input = await readInput();
 const tool = String(input.tool_name || '').split('__').pop();
 const args = input.tool_input || {};
-const isWrite = WRITES.has(tool) || (tool === 'run' && String(args.kind || '').toLowerCase() === 'logicflow');
+const isApproval = tool === 'release' && String(args.action || '').toLowerCase() === 'approve';
+const isWrite = !isApproval && (WRITES.has(tool) || (tool === 'run' && String(args.kind || '').toLowerCase() === 'logicflow'));
 
 if (!isWrite) {
   process.exit(0);
