@@ -30,7 +30,7 @@ Your administrator also needs to set up sign-in once for your organization: see
 1. Add the marketplace and install the plugin, and the Logic Fabric CLI plugin if you deploy with the CLI:
 
    ```bash
-   claude plugin marketplace add flowon-official/claude-plugins
+   claude plugin marketplace add flowon-official/ai-plugins
    claude plugin install logic-fabric-dataverse@flowon
    claude plugin install flowon-dynamics@flowon
    ```
@@ -48,10 +48,10 @@ uses the plugins the CLI installed). It needs Node.js 18 or later there too.
 1. Install it:
 
    ```bash
-   copilot plugin marketplace add flowon-official/claude-plugins     # GitHub Copilot
+   copilot plugin marketplace add flowon-official/ai-plugins     # GitHub Copilot
    copilot plugin install logic-fabric-dataverse@flowon
 
-   codex plugin marketplace add flowon-official/claude-plugins       # Codex
+   codex plugin marketplace add flowon-official/ai-plugins       # Codex
    codex plugin add logic-fabric-dataverse@flowon
    ```
 

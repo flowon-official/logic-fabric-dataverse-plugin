@@ -7,7 +7,7 @@
     "name": "Flowon"
   },
   "homepage": "https://docs.flowon.com/ai/plugins/claude-code/",
-  "repository": "https://github.com/flowon-official/claude-plugins",
+  "repository": "https://github.com/flowon-official/logic-fabric-dataverse-plugin",
   "license": "LicenseRef-Flowon",
   "privacyPolicyUrl": "https://www.flowon.com/privacy-policy",
   "network": {

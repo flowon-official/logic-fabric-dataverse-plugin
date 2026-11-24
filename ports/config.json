@@ -1,0 +1,20 @@
+{
+  "short": "Build Dataverse logic safely",
+  "category": "Developer Tools",
+  "codexAgentPrefix": "logic_fabric",
+  "servers": {
+    "foundry": {
+      "title": "Logic Foundry"
+    }
+  },
+  "rewrites": [
+    {
+      "pattern": "```\\nnode \"\\$\\{CLAUDE_PLUGIN_ROOT\\}\\/scripts\\/dashboard\\.mjs\"\\n```\\n\\nIf the path above still shows `\\$\\{CLAUDE_PLUGIN_ROOT\\}`, the script is `scripts\\/dashboard\\.mjs` in this plugin's folder\\n\\(`[^`]+`, under `~\\/\\.claude\\/plugins\\/`\\): find it with Glob and run it the same way\\.",
+      "replacement": "```\nnode \"<plugin folder>/scripts/dashboard.mjs\"\n```\n\nThe plugin folder (`{plugin}`) is three folders above this skill's `SKILL.md` (`ports/skills/dashboard/`)."
+    },
+    {
+      "pattern": ", mention that it can be opened in Claude on the web or desktop.",
+      "replacement": ", mention that it can be opened in Claude on the web or desktop, or rendered from its JSON."
+    }
+  ]
+}
