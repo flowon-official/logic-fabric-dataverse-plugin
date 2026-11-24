@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*foundry.*.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','gate.mjs')).href)\" -- --client copilot --root \"${PLUGIN_ROOT}\"",
+            "timeoutSec": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','stage.mjs')).href)\" -- --client copilot --root \"${PLUGIN_ROOT}\"",
+            "timeoutSec": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','dataverse.mjs')).href)\" -- --client copilot --root \"${PLUGIN_ROOT}\"",
+            "timeoutSec": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": ".*foundry.*(save|delete)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','export.mjs')).href)\" -- --client copilot --root \"${PLUGIN_ROOT}\"",
+            "timeoutSec": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','approval.mjs')).href)\" -- --client copilot --root \"${PLUGIN_ROOT}\"",
+            "timeoutSec": 30
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','context.mjs')).href)\" -- --client copilot --root \"${PLUGIN_ROOT}\"",
+            "timeoutSec": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','dashboard.mjs')).href)\" -- --client copilot --root \"${PLUGIN_ROOT}\"",
+            "timeoutSec": 60
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','context.mjs')).href)\" -- --client copilot --root \"${PLUGIN_ROOT}\"",
+            "timeoutSec": 30
+          }
+        ]
+      }
+    ]
+  }
+}

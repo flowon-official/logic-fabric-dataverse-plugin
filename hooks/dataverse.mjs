@@ -5,11 +5,13 @@
 //   - is refused outside a change's build stage, or before its plan is approved (the same rules as Foundry writes),
 //   - is refused when it names a test or production environment of workspace.yaml (those change only through
 //     solutions and the pipeline),
-//   - otherwise stops for the user's approval, showing what it is about to change. The user approves it in Claude
-//     Code's prompt, so Claude runs it instead of handing the user a script.
+//   - otherwise stops for the user's approval, showing what it is about to change. The user approves it in the
+//     client's prompt, so the agent runs it instead of handing the user a script. (Codex can't ask from a hook: there
+//     it is refused, and the reason tells the agent to let the user run it.)
 // Previews (import --security-what-if) and read-only commands pass. Outside a workflow repository nothing is checked.
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { decide as answer } from './client.mjs';
 import { buildRefusal, findWorkspace, isOwnWorkspace, readEnvironments, readInput } from './workspace.mjs';
 
 const CLI_WRITES = /\bflowon-dynamics(?:\.exe)?\s+(import|i|apply-mappings|am|disable-plugins|dp|enable-plugins|ep|enable-recipe|er|disable-recipe|dr|increment-solution-version|isv|create-patch|cp|merge-patches|mp|publish-api|pa)(?=\s|$)/i;
@@ -23,12 +25,7 @@ const WRITE = /-Method\s+['"]?(Post|Patch|Put|Delete)\b|-X\s*['"]?(POST|PATCH|PU
 // Script files the command runs, read so a script can't hide what it does.
 const SCRIPT = /(?:^|[\s"'&])((?:[A-Za-z]:)?[^\s"'&|;<>]+\.(?:py|ps1|psm1|mjs|cjs|js|ts|sh|csx))(?=["'\s;|&)]|$)/g;
 
-function decide(decision, reason) {
-  process.stdout.write(JSON.stringify({
-    hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: decision, permissionDecisionReason: reason },
-  }));
-  process.exit(0);
-}
+const decide = (decision, reason) => answer('PreToolUse', decision, reason);
 
 const input = await readInput();
 
@@ -71,7 +68,7 @@ const target = Object.entries(environments).find(([, env]) => {
 });
 
 if (target && (target[1].role || target[0]) !== 'development') {
-  decide('deny', `${what} would change the ${target[0]} environment (${target[1].role || target[0]}). It changes only through solutions and the pipeline, not from Claude Code.`);
+  decide('deny', `${what} would change the ${target[0]} environment (${target[1].role || target[0]}). It changes only through solutions and the pipeline, not from an AI tool.`);
 }
 
 const { refusal, change } = buildRefusal(workspace, `Changing Dataverse outside Logic Foundry (${what})`);
@@ -82,4 +79,4 @@ if (refusal) {
 
 const where = target ? `the ${target[0]} environment` : 'Dataverse (the environment its connection string names)';
 
-decide('ask', `Logic Fabric for Dataverse: ${what} changes ${where} outside Logic Foundry, for the change ${change.name}. Approve it only if the approved plan has this task and the command does what Claude told you.`);
+decide('ask', `Logic Fabric for Dataverse: ${what} changes ${where} outside Logic Foundry, for the change ${change.name}. Approve it only if the approved plan has this task and the command does what the agent told you.`);

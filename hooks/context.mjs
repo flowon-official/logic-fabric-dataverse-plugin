@@ -1,6 +1,8 @@
-// UserPromptSubmit: in a repository that uses the workflow, tell Claude the active change, its stage and whether
-// the approved spec and plan still match their approval hashes, so no command needs a shell to check them.
+// UserPromptSubmit (and SessionStart, for a client that drops a prompt hook's context): in a repository that uses the
+// workflow, tell the agent the active change, its stage and whether the approved spec and plan still match their
+// approval hashes, so no command needs a shell to check them.
 import { join } from 'node:path';
+import { addContext } from './client.mjs';
 import { OFFERING, activeChange, findWorkspace, isOwnWorkspace, readInput, readStatus, sha256, workspaceOffering } from './workspace.mjs';
 
 const input = await readInput();
@@ -37,7 +39,5 @@ if (!isOwnWorkspace(workspace)) {
   context = `${parts.join('; ')}.`;
 }
 
-process.stdout.write(JSON.stringify({
-  hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: context },
-}));
+addContext(input.hook_event_name === 'SessionStart' ? 'SessionStart' : 'UserPromptSubmit', context);
 process.exit(0);

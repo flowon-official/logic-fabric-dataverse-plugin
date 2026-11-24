@@ -1,0 +1,45 @@
+{
+  "name": "logic-fabric-dataverse",
+  "version": "0.10.0",
+  "description": "Build Logic Fabric for Dataverse solutions like software: request, spec, approved build plan, build with tests, review and acceptance, through your Logic Foundry MCP server. Also documents, governs, analyzes and security-reviews existing projects.",
+  "author": {
+    "name": "Flowon"
+  },
+  "homepage": "https://docs.flowon.com/ai/plugins/claude-code/",
+  "repository": "https://github.com/flowon-official/claude-plugins",
+  "license": "LicenseRef-Flowon",
+  "keywords": [
+    "dataverse",
+    "dynamics-365",
+    "logic-fabric",
+    "flowon",
+    "mcp"
+  ],
+  "skills": [
+    "./skills/",
+    "./ports/skills/"
+  ],
+  "commands": [],
+  "hooks": "./ports/codex/hooks.json",
+  "mcpServers": {},
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./ports/skills/setup/SKILL.md"
+    }
+  },
+  "interface": {
+    "displayName": "Logic Fabric for Dataverse",
+    "shortDescription": "Build Dataverse logic safely",
+    "longDescription": "Build Logic Fabric for Dataverse solutions like software: request, spec, approved build plan, build with tests, review and acceptance, through your Logic Foundry MCP server. Also documents, governs, analyzes and security-reviews existing projects.",
+    "developerName": "Flowon",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://docs.flowon.com/ai/plugins/claude-code/",
+    "privacyPolicyURL": "https://www.flowon.com/privacy-policy",
+    "composerIcon": "./.claude-plugin/icon.png",
+    "logo": "./.claude-plugin/icon.png"
+  }
+}

@@ -40,6 +40,44 @@ Your administrator also needs to set up sign-in once for your organization: see
 3. Restart Claude Code, run `/mcp`, select **plugin:logic-fabric-dataverse:foundry** and choose to sign in. Sign in
    with your work account in the browser window that opens.
 
+## Codex and GitHub Copilot
+
+The plugin works the same way in OpenAI Codex and in GitHub Copilot (the Copilot CLI, and Visual Studio Code, which
+uses the plugins the CLI installed). It needs Node.js 18 or later there too.
+
+1. Install it:
+
+   ```bash
+   copilot plugin marketplace add flowon-official/claude-plugins     # GitHub Copilot
+   copilot plugin install logic-fabric-dataverse@flowon
+
+   codex plugin marketplace add flowon-official/claude-plugins       # Codex
+   codex plugin add logic-fabric-dataverse@flowon
+   ```
+
+2. In your repository, run the plugin's `setup` skill with your Logic Foundry server's address:
+   `/logic-fabric-dataverse:setup https://<app>.<region>.azurecontainerapps.io/mcp` in Copilot,
+   `$logic-fabric-dataverse:setup ...` in Codex. In Copilot it writes the `foundry` server into the repository's
+   `.github/mcp.json`; in Codex it adds it to your Codex configuration and copies the plugin's agents into
+   `.codex/agents/`.
+3. Sign in to `foundry`: Copilot asks when it first connects (trust the repository's folder when Copilot asks, or it
+   doesn't load the repository's servers); in Codex, run `codex mcp login foundry` in your terminal.
+4. **Codex only:** open `/hooks` and trust the plugin's hooks. Codex runs no plugin hook until you trust it, and asks
+   again whenever the hooks change. Codex also loads the agents in `.codex/agents/` (named `logic_fabric_reviewer`
+   and so on) only from a folder you trust. After a plugin update, run `setup` again to refresh them.
+
+What differs from Claude Code:
+
+- The commands are skills you run by name: `/logic-fabric-dataverse:plan approve` in Copilot,
+  `$logic-fabric-dataverse:plan approve` in Codex.
+- Codex can't stop a command for your approval from a hook. A command the plugin would show you for approval (such as
+  importing a security role with the Logic Fabric CLI) is refused instead, and the agent tells you the command to run
+  in your own terminal.
+- Copilot's cloud agent can't sign in to Logic Foundry, so the plugin doesn't work there.
+
+Logic Foundry keeps the approvals and the stages for every client (see [Approvals](#approvals)); the plugin's hooks
+add their checks where the client runs them.
+
 ## How a change is built
 
 Every change goes through six stages, the way a software change does. Claude does the work in each stage and stops
@@ -145,13 +183,16 @@ becomes a fix task: run `build`, then `review` again.
 
 `accept` runs the acceptance scenarios again on fresh test data, checks that what is in the development environment
 matches `artifacts/`, and writes `acceptance.md`: each acceptance criterion with its evidence (records, outputs),
-the test totals and the review's verdict. Then you decide:
+the test totals and the review's verdict. Then you decide, in Foundry's dialog (see [Approvals](#approvals)):
 
-- `/logic-fabric-dataverse:accept accept` closes the change. Its tests join the regression set in
-  `logic-fabric/baseline/tests/`, the requirements document is brought up to date, and the change is ready for ALM:
-  export the solution and run your pipeline to take it to test and production.
-- `/logic-fabric-dataverse:accept reject spec` or `accept reject build`, with your reason, sends it back to that
-  stage.
+- **Accept** closes the change. Its tests join the regression set in `logic-fabric/baseline/tests/`, the
+  requirements document is brought up to date, and the change is ready for ALM: export the solution and run your
+  pipeline to take it to test and production.
+- **Send it back to the build or to the spec**, with your reason. Back to the spec, its spec and plan approvals are
+  cleared, so you approve both again before anything is built.
+
+Without the Logic Fabric Foundry solution, you decide in the session: `/logic-fabric-dataverse:accept accept`, or
+`accept reject spec` or `accept reject build` with your reason.
 
 ### Small changes
 
@@ -196,6 +237,10 @@ development environment, you give each approval to Foundry, not to Claude:
 - A project the workflow creates refuses every change through Foundry that doesn't belong to a change whose plan you
   approved, and a delete the plan doesn't list, whichever client makes it. Foundry never switches this off: a person
   does, on the project's **Foundry Project Setting**.
+- With Logic Foundry 2.2.0 or later and Logic Fabric 1.0.0.46 or later, Foundry also keeps the change's stage: a plan
+  is approved only after its spec; once review sends the change for acceptance, Foundry makes no changes for it until
+  you decide; and an accepted change is closed for good. Your acceptance, or your reason for sending it back, is
+  recorded the same way.
 
 Without the solution, Claude asks you in the session as before, and the plugin's hooks keep the rules.
 
@@ -279,6 +324,8 @@ Do this once per Microsoft Entra ID tenant.
    `https://<app>.<region>.azurecontainerapps.io/mcp`. It must match the `resource` value the server shows at
    `https://<server>/.well-known/oauth-protected-resource` exactly.
 
+Codex and the Copilot CLI sign in through the same client app and redirect URI, which the `setup` skill configures.
+
 For production, run Foundry with `FOUNDRY_READ_ONLY=true`: it then refuses every change.
 
 ## Troubleshooting
@@ -296,6 +343,10 @@ For production, run Foundry with `FOUNDRY_READ_ONLY=true`: it then refuses every
 | Claude says Foundry's `release` tool has no `approve` action | The session started before your Foundry was updated to 2.1 or later and still has its old tool list. Restart Claude Code (or reconnect the `foundry` server in `/mcp`). |
 | "This environment doesn't have the Logic Fabric Foundry solution" | Foundry can't record approvals there; Claude asks you in the session instead. Install Logic Fabric 1.0.0.43 or later to have Foundry keep them. |
 | `AADSTS50011` on Foundry's approval page | Foundry's server app needs the web redirect URI `https://<your Foundry>/approvals/signin-oidc` with ID tokens. The deployment templates (1.10.0 or later) add it. |
+| Approving fails with "Elicitation is not supported in stateless mode" | Your Logic Foundry is 2.1.1 or 2.1.2, which can't show its dialog in Claude Code. Update it to 2.1.3 or later (deployment templates 1.10.3). |
+| "Change ... is waiting for its owner's acceptance" | Review sent the change for acceptance, so Foundry makes no changes for it. Accept it or send it back: `/logic-fabric-dataverse:accept`. |
+| "Change ... is accepted, so it is closed" | Further work on what it built is a new change: `/logic-fabric-dataverse:start`. |
+| Codex doesn't stop a Foundry change outside the build stage | Codex runs the plugin's hooks only once you trust them: open `/hooks`. Foundry still keeps the approvals and stages of a project whose writes need approved changes. |
 | "Access denied" or missing records | Claude acts as you. Ask your Dataverse administrator for the privileges you need. |
 
 ## Privacy and license

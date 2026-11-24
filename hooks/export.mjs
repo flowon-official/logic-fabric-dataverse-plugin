@@ -6,6 +6,7 @@
 // source file, its entry and its link. Does nothing outside a workflow repository or without an active change.
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { isFoundryTool, toolName } from './client.mjs';
 import { activeChange, createdFile, findWorkspace, isOwnWorkspace, readCreated, readInput } from './workspace.mjs';
 
 const SCHEMA = ['table', 'column', 'choice', 'relationship', 'record'];
@@ -57,7 +58,7 @@ function writeCreated(changeFolder, entries) {
 
 try {
   const input = await readInput();
-  const tool = String(input.tool_name || '').split('__').pop();
+  const tool = isFoundryTool(input) ? toolName(input) : null;
   const result = resultOf(input.tool_response);
   const workspace = findWorkspace(input.cwd);
   const change = workspace && isOwnWorkspace(workspace) && activeChange(workspace);

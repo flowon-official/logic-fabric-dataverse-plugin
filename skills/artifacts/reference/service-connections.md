@@ -20,7 +20,7 @@ Scheme types: `1` API key (`key`, `location`: header, query or cookie), `2` HTTP
 (`flow`: clientCredentials, authorizationCode, implicit, password; `clientId`, `accessTokenUrl`, `authUrl`,
 `callbackUrl`, `scope`), `4` OpenID Connect (configure it in the designer).
 
-**Credentials** (`value`, `password`, `clientSecret`) never go through Claude: Foundry redacts them on read
+**Credentials** (`value`, `password`, `clientSecret`) never go through the AI: Foundry redacts them on read
 (`"<redacted>"`), refuses them on save, and keeps the stored value when you send `"<redacted>"` back. The plan lists
 setting them as an administrator task, done in the service connection designer.
 

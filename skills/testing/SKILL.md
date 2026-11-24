@@ -63,7 +63,7 @@ range or required level) is the case's outcome, checked against `expect.error`. 
 
 Tests run only where `workspace.yaml` has `tests_allowed: true`. Never against production.
 
-The same files run in a pipeline with the command-line tools, so the release runs the tests Claude ran:
+The same files run in a pipeline with the command-line tools, so the release runs the tests the build ran:
 `flowon-dynamics test --foundry-url <url>/mcp --project <Project> --tests logic-fabric/changes/<change>/tests
 --workspace logic-fabric/workspace.yaml --junit test-results.xml` (bearer token in `FOUNDRY_TOKEN`; exits non-zero
 when a case fails). When the user asks for a pipeline, add this step after the import into the test environment.

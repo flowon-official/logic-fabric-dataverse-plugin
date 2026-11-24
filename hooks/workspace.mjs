@@ -2,6 +2,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
+import { command, normalize } from './client.mjs';
 
 // The folder holding logic-fabric/workspace.yaml, searching up from the session's directory; null if none.
 export function findWorkspace(start) {
@@ -67,14 +68,14 @@ export function buildRefusal(workspace, what, allowed = ['build', 'review']) {
   const change = activeChange(workspace);
 
   if (!change) {
-    return { refusal: `There is no active Logic Fabric change. Start one with /logic-fabric-dataverse:start; ${what} is allowed only in a change's build stage.` };
+    return { refusal: `There is no active Logic Fabric change. Start one with ${command('start')}; ${what} is allowed only in a change's build stage.` };
   }
 
   const status = readStatus(change.folder);
   const stage = status.stage || 'prompt';
 
   if (!allowed.includes(stage)) {
-    return { refusal: `The change ${change.name} is in the ${stage} stage. ${what} is allowed only in ${allowed.join(' or ')}. Run /logic-fabric-dataverse:status to see what is open.` };
+    return { refusal: `The change ${change.name} is in the ${stage} stage. ${what} is allowed only in ${allowed.join(' or ')}. Run ${command('status')} to see what is open.` };
   }
 
   const quick = String(status.quick).toLowerCase() === 'true';
@@ -173,11 +174,12 @@ export function sha256(file) {
   return createHash('sha256').update(text).digest('hex');
 }
 
+// The hook's input in Claude Code's shape, whichever client sent it (client.mjs).
 export async function readInput() {
   const chunks = [];
   for await (const chunk of process.stdin) {
     chunks.push(chunk);
   }
   const text = Buffer.concat(chunks).toString('utf8');
-  return text.trim() ? JSON.parse(text) : {};
+  return normalize(text.trim() ? JSON.parse(text) : {});
 }

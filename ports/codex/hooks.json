@@ -1,0 +1,81 @@
+{
+  "description": "The Logic Fabric workflow's hooks: the gate (Foundry writes only in the build stage, against the approved plan), the Dataverse check (commands that change Dataverse outside Foundry follow the same rules, are refused for test and production, and stop for the user's approval), the stage guard (stages move forward; approval hashes are never written by hand), approval hashes stamped when an approval is recorded, the active change's state at each prompt, the export of each saved artifact's source and link into the change folder, and the dashboard (logic-fabric/dashboard.html), kept current at the end of each turn once it has been written.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__foundry__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','gate.mjs')).href)\" -- --client codex --root \"${PLUGIN_ROOT}\"",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','stage.mjs')).href)\" -- --client codex --root \"${PLUGIN_ROOT}\"",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','dataverse.mjs')).href)\" -- --client codex --root \"${PLUGIN_ROOT}\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__foundry__(save|delete)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','export.mjs')).href)\" -- --client codex --root \"${PLUGIN_ROOT}\"",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','approval.mjs')).href)\" -- --client codex --root \"${PLUGIN_ROOT}\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','context.mjs')).href)\" -- --client codex --root \"${PLUGIN_ROOT}\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const a=process.argv,i=a.indexOf('--root'),e=process.env,r=e.PLUGIN_ROOT||e.COPILOT_PLUGIN_ROOT||e.CLAUDE_PLUGIN_ROOT||(i>0&&!String(a[i+1]).includes('\\x24')?a[i+1]:'');import(require('url').pathToFileURL(require('path').join(r,'hooks','dashboard.mjs')).href)\" -- --client codex --root \"${PLUGIN_ROOT}\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

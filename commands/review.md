@@ -16,4 +16,7 @@ Stage 5 (Review) for the change in `logic-fabric/.active`, or a review of the na
    artifact, path, rule, evidence and fix. Update `findings_*` in `status.yaml`.
 5. Each blocker or major finding becomes a fix task in `plan.md` (`F-n`); the build fixes them
    (`/logic-fabric-dataverse:build`), then review again: only the changed artifacts, closing or reopening each
-   finding. With no blocker or major open, set `stage: acceptance`.
+   finding. With no blocker or major open, send the change for acceptance through Foundry (`release`,
+   `action: "submit"`, the `changeId`): from then on Foundry makes no changes for it until the owner decides. Then
+   set `stage: acceptance`. If Foundry answers that this environment doesn't keep the stages of changes, set the stage
+   anyway and say so in `build-log.md`.

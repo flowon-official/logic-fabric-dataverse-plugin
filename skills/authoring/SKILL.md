@@ -54,7 +54,9 @@ Templates are in [templates/](templates/). Rules:
   at acceptance (`accept reject spec|build`, with `rejected_by` and `rejected_reason`). An accepted change is
   closed: further work on what it built, undoing it included, is a **new change** (`/logic-fabric-dataverse:start`).
   The plugin's **stage hook** refuses any other move back, any hand-written `*_sha256`, and a `retired:` line in
-  a change's own tests.
+  a change's own tests. **Foundry keeps the stage too**, where the Logic Fabric Foundry solution is installed: it
+  approves a plan only after its spec, makes no changes for a change that review sent for acceptance (`release`,
+  `action: "submit"`) until the owner decides, and none at all for an accepted change.
 - **An approval is the owner's, given to Foundry, not to you.** Call `release` with `action: "approve"`, the
   `changeId`, `project` (also a project the plan will create), `options.gate` (`spec` or `plan`), `options.text` (the
   file's full text as saved: read it, don't retype it) and, for a quick change whose spec builds without a plan,
@@ -66,10 +68,12 @@ Templates are in [templates/](templates/). Rules:
   `<gate>_sha256` empty: the plugin's **approval hook** stamps it with the approved file's hash, the same hash Foundry
   returns (ticking a task's checkbox doesn't count as a change; editing its text does). Then ask the owner to commit.
   If the owner declines, nothing is approved: ask what to change. To approve again after an amendment, approve
-  through Foundry again and record the new approval with `<gate>_sha256` emptied.
+  through Foundry again and record the new approval with `<gate>_sha256` emptied. Acceptance works the same way
+  (`options.gate: "acceptance"`, `options.text` the `acceptance.md`): the owner accepts, or sends the change back to
+  its build or its spec with a reason (see `/logic-fabric-dataverse:accept`).
 - Only when Foundry answers that this environment doesn't have the Logic Fabric Foundry solution, or that it can't
-  ask the owner at all (no dialog and no approval page), take the approval in the session instead
-  (`AskUserQuestion`), and say in `build-log.md` that Foundry didn't record it. Never record an approval the owner
+  ask the owner at all (no dialog and no approval page), take the approval in the session instead (one question to
+  the owner: `AskUserQuestion` in Claude Code), and say in `build-log.md` that Foundry didn't record it. Never record an approval the owner
   didn't give, and never open or answer the approval page yourself.
 - At every prompt the **context hook** reports the active change, its stage and whether `spec.md` and `plan.md`
   still match their approval. If one has changed since approval, the gate reopens: say so and stop.
@@ -129,15 +133,17 @@ run themselves.** Do the task with their approval:
 
 1. Prepare it: the file the command reads and the exact command. For roles, start from `export-security` of a
    similar role, and preview with `import -sf security.xml --security-what-if` (it changes nothing).
-2. Ask the user in one question (`AskUserQuestion`): what will be created or changed, in which environment
-   (development only), the preview's result, and the command. Offer approve and don't.
-3. On approval, run it yourself. The plugin's Dataverse hook shows the command in Claude Code's approval prompt;
-   it refuses commands outside the build stage and against test or production environments.
+2. Ask the user in one question (`AskUserQuestion` in Claude Code): what will be created or changed, in which
+   environment (development only), the preview's result, and the command. Offer approve and don't.
+3. On approval, run it yourself. The plugin's Dataverse hook shows the command in your client's approval prompt (in
+   Codex, which can't ask from a hook, it refuses the command: then the user runs it in their own terminal); it
+   refuses commands outside the build stage and against test or production environments.
 4. The command reads the connection string from the variable `workspace.yaml` names for the environment
    (`connection`), passed with `-c` as `"$env:<VARIABLE>"` (PowerShell) or `"$<VARIABLE>"` (bash). Never read, print
    or copy its value, and don't copy it into `FLOWON_CONNECTION_STRING` either (version 1.2.0 of the tool prints that
-   variable in its help, after any wrong option). If the variable isn't set, ask the user to set it outside Claude
-   Code and restart it, never with a `!` command in the prompt: that puts the secret in the conversation.
+   variable in its help, after any wrong option). If the variable isn't set, ask the user to set it outside the AI
+   tool and restart it, never with a command typed into the conversation (such as Claude Code's `!`): that puts the
+   secret in the conversation.
 5. Record the command and its result in `build-log.md`. If the user declines, or a permission check refuses the
    command, mark the task blocked in `plan.md` (`Blocked: <reason>` as the first line under it, box unticked) and go
    on with the next one: never look for another way around it, and don't offer one. A route that was refused stays
@@ -145,7 +151,7 @@ run themselves.** Do the task with their approval:
 
 **When neither Foundry nor `flowon-dynamics` can do a task**, mark it blocked in `plan.md` with the refusal
 (Foundry's or Dataverse's message), note it in `build-log.md` as something Foundry can't do yet, and ask the user
-(`AskUserQuestion`) whether they'll make that change themselves in the maker portal. If they do, read it back with
+(in one question) whether they'll make that change themselves in the maker portal. If they do, read it back with
 `schema` or `get`, remove the `Blocked:` line, tick the task and go on. Never make the change another way yourself:
 not in the maker portal (a browser pane included), and not through the Web API, an SDK script or a connection
 string. Changes made that way skip the plan check, the Dataverse hook and the export to `artifacts/`.

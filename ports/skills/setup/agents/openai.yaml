@@ -1,0 +1,5 @@
+# Codex runs this skill only when the user asks for it.
+interface:
+  display_name: "logic-fabric-dataverse: setup"
+policy:
+  allow_implicit_invocation: false
