@@ -4,6 +4,18 @@ Each release is tagged `v<version>`. Releases before 0.10.0 were made from
 [flowon-official/ai-plugins](https://github.com/flowon-official/ai-plugins) (then named claude-plugins), tagged
 `logic-fabric-dataverse-v<version>`; this repository keeps their history and tags them `v<version>`.
 
+## 0.11.0 (2026-11-24)
+
+- Logic Foundry keeps each change's record in Dataverse (Logic Foundry 2.3.0 and the Logic Fabric Foundry solution
+  1.0.0.47): approving the spec and the plan passes their requirements and tasks as data, `submit` passes the review,
+  and a blocked task is recorded with `release` `block` and closed with `unblock`. Foundry refuses `submit` while one
+  is open.
+- Review findings the owner chooses not to fix stay open and are accepted as risks with the change; an open blocker
+  needs a reviewer on Foundry's approval page first.
+- `govern` and `secure` record their run and findings in Foundry. `govern` lists the rules a reviewer waived.
+- A `waive` command asks a reviewer to waive a governance rule for the project or one artifact.
+- The testing skill says how a business unit fixture is created and torn down.
+
 ## 0.10.0 (2026-11-24)
 
 - The plugin installs in Codex and GitHub Copilot from the same marketplace: the commands as skills you run by name, the

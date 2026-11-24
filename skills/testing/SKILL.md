@@ -59,7 +59,9 @@ teardown: delete-created
 `workspace.yaml`, and `changeId`. It returns one result per case: passed, failed (expected and actual), errored
 (the message) or skipped (retired), with timings. A `when` that Dataverse refuses (a validation recipe, a column's
 range or required level) is the case's outcome, checked against `expect.error`. An inactive fixture gives
-`statecode` and `statuscode` (as `choice` values) in its `create`: the runner creates the row, then sets its state. Write `test-report.md` from it, including the traceability matrix.
+`statecode` and `statuscode` (as `choice` values) in its `create`: the runner creates the row, then sets its state. A
+`businessunit` fixture gets the organization's root business unit as its parent unless it gives
+`parentbusinessunitid`, and teardown disables it before deleting it (Dataverse deletes only a disabled unit). Write `test-report.md` from it, including the traceability matrix.
 
 Tests run only where `workspace.yaml` has `tests_allowed: true`. Never against production.
 

@@ -3,12 +3,17 @@ description: Check a Logic Fabric project against the governance rule catalog an
 argument-hint: "[project] [sections...]"
 ---
 
-Read-only; runs any time. Governance review of the project in `workspace.yaml` (or the one given): $ARGUMENTS
+Runs any time and changes nothing in the project. Governance review of the project in `workspace.yaml` (or the one
+given): $ARGUMENTS
 
-1. Run `analyze` `kind: "governance"` for the project: the rules Foundry checks by code, with findings.
+1. Run `analyze` `kind: "governance"`, `record: true` for the project: the rules Foundry checks by code, with
+   findings. Foundry records the run and its findings (the project's analysis history in Dataverse) and skips the
+   rules a reviewer waived for the project, listing them under `waived`.
 2. Hand the project and that result to the `logic-fabric-dataverse:reviewer` agent in governance mode: it applies the
    rules that need judgment (`reference` `topic: "rules"`), honouring `logic-fabric/rules.yaml` (rules switched off,
    severities changed, the project's own rules in plain language).
 3. Write `logic-fabric/reports/govern/<yyyy-mm-dd>.md`: findings by section and severity with rule, artifact,
-   path, evidence and fix, and what changed since the previous report.
+   path, evidence and fix, the waived rules with their reasons, and what changed since the previous report.
 4. Offer to start a change for the blocker and major findings (`/logic-fabric-dataverse:start --from <report>#<finding>`).
+   A rule that doesn't apply to this project, or to one artifact, is waived by a reviewer instead
+   (`/logic-fabric-dataverse:waive`).

@@ -5,7 +5,8 @@ argument-hint: "[accept | reject spec | reject build]"
 
 Follow the `logic-fabric-dataverse:testing` skill. Stage 6 (Acceptance) for the change in `logic-fabric/.active`.
 
-1. Check `status.yaml`: `stage: acceptance`, no open blocker or major finding.
+1. Check `status.yaml`: `stage: acceptance`, and no open blocker or major finding other than those the owner chose
+   to accept as risks at review.
 2. Run every test of the change and the regression set on fresh fixtures (retired cases are skipped), and check that the exported sources in
    `artifacts/` match the environment (`get` with `include: ["source"]`).
 3. Write `acceptance.md`: each acceptance criterion with its evidence (records and their links, outputs), the test
@@ -14,6 +15,10 @@ Follow the `logic-fabric-dataverse:testing` skill. Stage 6 (Acceptance) for the 
    `options.gate: "acceptance"`, `options.text` the full `acceptance.md` as saved, the `changeId` and `project`.
    Foundry asks the owner, not you: accept, or send the change back to its build or to its spec, with a reason. A
    client without that dialog gets Foundry's approval page, as for the spec and plan (see the authoring skill).
+   Accepting also accepts the review's open findings as risks, recorded with the owner as their approver. If a
+   blocker is open, Foundry first answers with a link for a reviewer (the Logic Fabric Foundry Reviewer role): give
+   it to the user to pass on (you can't answer it). The reviewer accepts the blockers as risks there, or sends the
+   change back to its build. When the user says it's answered, ask Foundry again.
 5. Record what Foundry reports, then stop:
    - **Accepted**: record `accepted_by` and `accepted_at` in `status.yaml` and `acceptance.md`, set `stage: accepted`,
      merge the glossary additions into `logic-fabric/glossary.md`, copy the change's tests into

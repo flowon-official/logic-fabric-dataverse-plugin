@@ -265,7 +265,8 @@ in git.
 
 ## Work with existing projects
 
-These commands only read, run at any time, and write their report to `logic-fabric/reports/`:
+These commands change nothing in the project, run at any time, and write their report to `logic-fabric/reports/`.
+`govern` and `secure` also record the run and its findings in Logic Foundry, the project's analysis history:
 
 | Command | What it does |
 |---|---|
@@ -273,6 +274,9 @@ These commands only read, run at any time, and write their report to `logic-fabr
 | `/logic-fabric-dataverse:govern` | Checks the project against the governance rules and your own |
 | `/logic-fabric-dataverse:insights` | Analyzes the business processes: defects, bottlenecks, SLA risk, redesign ideas |
 | `/logic-fabric-dataverse:secure` | Who can run what, attack paths, missing access rules, exposed credentials |
+
+`/logic-fabric-dataverse:waive` asks a reviewer to waive a governance rule for the project, or for one artifact, with
+a reason and an optional end date. Logic Foundry records it, and `govern` then lists the rule as waived.
 
 `/logic-fabric-dataverse:agent-tools` prepares flows, blocks and processes to be tools for AI agents through Logic
 Conductor: descriptions written for an agent, documented inputs and an access rule. It changes artifacts, so it runs
@@ -299,7 +303,7 @@ generated, so the command adds it to `logic-fabric/.gitignore`.
 | Part | Names | Purpose |
 |---|---|---|
 | Skills | `authoring`, `artifacts`, `grammar`, `testing` | The workflow and its rules; every artifact kind with examples; expressions; tests |
-| Commands | `start`, `spec`, `plan`, `build`, `review`, `accept`, `status`, `dashboard`, `test`, `document`, `govern`, `insights`, `secure`, `agent-tools` | The stages, where changes stand, and the project-wide reviews |
+| Commands | `start`, `spec`, `plan`, `build`, `review`, `accept`, `status`, `dashboard`, `test`, `document`, `govern`, `insights`, `secure`, `waive`, `agent-tools` | The stages, where changes stand, and the project-wide reviews |
 | Agents | `reviewer`, `explorer`, `documenter`, `process-analyst`, `security-reviewer` | Read-only specialists |
 | Hooks | gate, dataverse, stage, approval, context, export, dashboard | Foundry changes only during a change's build, against the approved plan; other commands that change Dataverse under the same rules, asked for each time and never for test or production; stages only move forward and a change can't retire its own tests; approvals stamped with the approved file's hash; the active change's state at each prompt; each saved artifact's source and link written to the change folder; the dashboard kept current |
 | MCP server | `foundry` | The connection to your Logic Foundry server |

@@ -67,12 +67,14 @@ describe('the gate on Claude Code', () => {
     assert.equal(claude(ws, 'save', {}).decision, 'deny');
   });
 
-  test('approving, submitting for acceptance and the owner deciding are no writes', () => {
+  test('approving, submitting for acceptance, the owner deciding and blocked tasks are no writes', () => {
     const ws = workspace('review', { 'spec.md': spec, 'plan.md': plan }, {
       stage: 'acceptance', quick: 'false', spec_sha256: f => hash(f['spec.md']), plan_sha256: f => hash(f['plan.md']),
     });
     assert.equal(claude(ws, 'release', { action: 'approve', options: { gate: 'acceptance' } }).decision, 'allow');
     assert.equal(claude(ws, 'release', { action: 'submit', changeId: 'review' }).decision, 'allow');
+    assert.equal(claude(ws, 'release', { action: 'block', changeId: 'review', options: { task: 'T-07' } }).decision, 'allow');
+    assert.equal(claude(ws, 'release', { action: 'unblock', changeId: 'review', options: { task: 'T-07' } }).decision, 'allow');
     assert.equal(claude(ws, 'release', { action: 'publish', kind: 'businessProcess', name: 'P' }).decision, 'deny');
     assert.equal(claude(ws, 'test', {}).decision, 'allow');
   });

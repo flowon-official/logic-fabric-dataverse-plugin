@@ -3,10 +3,12 @@ description: Security analysis of a Logic Fabric project - who can run what, att
 argument-hint: "[project]"
 ---
 
-Read-only; runs any time. Security analysis of the project in `workspace.yaml` (or the one given): $ARGUMENTS
+Runs any time and changes nothing in the project. Security analysis of the project in `workspace.yaml` (or the one
+given): $ARGUMENTS
 
-1. Run `analyze` `kind: "security"` for the project: the security graph (roles, teams, users, artifacts, tables) and
-   the detectors' findings, each with its evidence verified against the metadata.
+1. Run `analyze` `kind: "security"`, `record: true` for the project: the security graph (roles, teams, users,
+   artifacts, tables) and the detectors' findings, each with its evidence verified against the metadata. Foundry
+   records the run and its findings (the project's analysis history in Dataverse).
 2. Hand the result to the `logic-fabric-dataverse:security-reviewer` agent: it reviews each finding, prunes false
    positives, writes attack scenarios for the serious ones and a conclusion per security role.
 3. Write `logic-fabric/reports/secure/<yyyy-mm-dd>.md`: ranked findings (risk 0 to 100, evidence, remediation),

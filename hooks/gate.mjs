@@ -3,8 +3,9 @@
 // the active change is in the build stage (review for fix tasks; acceptance for test runs), the plan is approved
 // (the spec, for a quick change), no approved file (spec or plan) has changed since, and a delete is listed in one.
 // release with action "approve" is no write: it asks Foundry to ask the owner, which is how a spec or plan (or an
-// amended one) gets approved and a change accepted, so it passes in every stage. Nor is action "submit", which sends
-// a built change to the owner for acceptance: it only stops Foundry's writes for the change.
+// amended one) gets approved, a change accepted and a rule waived, so it passes in every stage. Nor is action "submit",
+// which sends a built change to the owner for acceptance: it only stops Foundry's writes for the change. Nor are
+// "block" and "unblock", which record a blocked task in Foundry's ledger and close it.
 // A repository without logic-fabric/workspace.yaml hasn't adopted the workflow, and nothing is refused.
 import { readFileSync } from 'node:fs';
 import { decide, isFoundryTool, toolName } from './client.mjs';
@@ -17,7 +18,7 @@ const deny = reason => decide('PreToolUse', 'deny', reason);
 const input = await readInput();
 const tool = toolName(input);
 const args = input.tool_input || {};
-const isApproval = tool === 'release' && ['approve', 'submit'].includes(String(args.action || '').toLowerCase());
+const isApproval = tool === 'release' && ['approve', 'submit', 'block', 'unblock'].includes(String(args.action || '').toLowerCase());
 const isWrite = isFoundryTool(input) && !isApproval && (WRITES.has(tool) || (tool === 'run' && String(args.kind || '').toLowerCase() === 'logicflow'));
 
 if (!isWrite) {

@@ -11,7 +11,7 @@ Follow the `logic-fabric-dataverse:authoring` and `logic-fabric-dataverse:testin
 for the change in `logic-fabric/.active`.
 
 If the argument is `approve`: ask Foundry for the owner's approval (`release`, `action: "approve"`, `options.gate:
-"plan"`, `options.text` the full `plan.md`; see the authoring skill). Once Foundry reports it approved, record
+"plan"`, `options.text` the full `plan.md`, `options.tasks` the plan's tasks as data; see the authoring skill). Once Foundry reports it approved, record
 `plan_approved_by` and `plan_approved_at` in `status.yaml` with `plan_sha256` empty (the approval hook stamps it),
 set `stage: build`, and ask the owner to commit. If the owner declined, ask what to change. Stop there.
 
