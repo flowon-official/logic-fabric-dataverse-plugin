@@ -5,13 +5,27 @@ with `schema`. Every component is created in the project's solution with the pub
 
 | Kind | `name` | Definition (`metadata`) |
 |---|---|---|
-| `table` | `<prefix>_<name>` | `displayName`, `pluralName`, `description`, `ownership` (`user`/`organization`), `isActivity` (true for an activity table, see below), `primaryName` {`name`, `displayName`, `maxLength`}, `features` {`notes`, `activities`, `queues`, `audit`, `changeTracking`, `connections`, `duplicateDetection`, `quickCreate`: true/false}, `columns` [ ... ] |
-| `column` | `<prefix>_<name>`, with `options.table` | `type` (`text`, `memo`, `integer`, `decimal`, `currency`, `boolean`, `date`, `datetime`, `choice`, `choices`, `lookup`), `displayName`, `description`, `required` (`none`/`recommended`/`required`), `maxLength`, `precision`, `min`, `max`, `trueLabel`/`falseLabel`, `choice` {`global`: name} or {`options`: [{`value`, `label`}]}, `target` and `relationshipName` (lookup), `cascade` |
+| `table` | `<prefix>_<name>` | `displayName`, `pluralName`, `description`, `ownership` (`user`/`organization`), `isActivity` (true for an activity table, see below), `primaryName` {`name`, `displayName`, `maxLength`, `autoNumber`}, `features` {`notes`, `activities`, `queues`, `audit`, `changeTracking`, `connections`, `duplicateDetection`, `quickCreate`: true/false}, `columns` [ ... ] |
+| `column` | `<prefix>_<name>`, with `options.table` | `type` (`text`, `memo`, `integer`, `decimal`, `currency`, `boolean`, `date`, `datetime`, `choice`, `choices`, `lookup`), `displayName`, `description`, `required` (`none`/`recommended`/`required`), `maxLength`, `autoNumber` (text, see below), `precision`, `min`, `max`, `trueLabel`/`falseLabel`, `choice` {`global`: name} or {`options`: [{`value`, `label`}]}, `target` and `relationshipName` (lookup), `cascade` |
 | `choice` | `<prefix>_<name>` | a global choice: `displayName`, `description`, `options` [{`value`, `label`}] |
 | `relationship` | `<prefix>_<name>` | many-to-many: `referenced`, `referencing`, `intersect` (one-to-many: save a lookup column) |
 | `record` | a label, with `options.table` | reference rows: `key` (an ID or {column: value}), `values` {column: value}. Each value takes its column's type: numbers for number and currency columns (`{"money": n}` also works), `"2026-01-01"` for a date, `"2026-01-01T09:00:00Z"` for a date and time, `{"choice": n}` or the choice's label, `[n, ...]` for a multi-choice, `{"lookup": {"table", "id"}}` (or the ID, for a lookup to one table) |
 
 Foundry refuses a setting it doesn't know instead of ignoring it, and names the right one.
+
+An **autonumber column** gives each row a business key Dataverse fills in when the row is created, such as
+`SUP-01000`: a `text` column (or the table's primary column, `primaryName.autoNumber`) with `"autoNumber":
+"SUP-{SEQNUM:5}"`. The placeholders are `{SEQNUM:n}` (a sequence of at least n digits, growing past it),
+`{RANDSTRING:n}` (1 to 6 random characters) and `{DATETIMEUTC:format}`, such as `{DATETIMEUTC:yyyyMMdd}`, in
+capitals; `maxLength` must be greater than the format's length. Use one for a key the spec gives a pattern to,
+instead of a block or flow that counts rows. Nothing writes the column: a flow that needs the number after creating
+a row reads it with `SaveEntity`'s `reloadEntityAfterSave: true`, or `GetEntityById`, and a test case leaves it out
+of the values it creates and never expects an exact number, which depends on the rows the environment made before. Saving a plain text column with a format
+makes it an autonumber; saving one without `autoNumber` leaves its format as it is. The format moves with the
+solution; the next number (1000 at first) belongs to each environment, so a key that must start elsewhere in test or
+production is a deployment task (Dataverse's `SetAutoNumberSeed`), not a schema save. This needs Logic Foundry 2.4.0:
+an earlier Foundry refuses `autoNumber` as a setting it doesn't know. Then save the column as plain text and
+mark a plan task for the owner to set its format in the maker portal (Autonumber, String prefixed number).
 
 An **activity table** (`isActivity: true`, for tasks, approvals or other activities about a row) follows
 Dataverse's rules: user ownership, `notes` on, `activities` off, and the primary column `subject` (leave

@@ -4,6 +4,13 @@ Each release is tagged `v<version>`. Releases before 0.10.0 were made from
 [flowon-official/ai-plugins](https://github.com/flowon-official/ai-plugins) (then named claude-plugins), tagged
 `logic-fabric-dataverse-v<version>`; this repository keeps their history and tags them `v<version>`.
 
+## 0.13.0 (2026-11-25)
+
+- Autonumber columns: the schema reference describes `autoNumber` on text columns and on a table's primary column
+  (Logic Foundry 2.4.0), for business keys Dataverse fills in when a row is created, such as `SUP-{SEQNUM:5}`; how
+  flows read the number and tests treat it; the next number per environment as a deployment task; and, with an
+  earlier Foundry, a plain text column whose format the owner sets in the maker portal.
+
 ## 0.12.0 (2026-11-25)
 
 - When a stage is done, the agent offers the next step as a choice (ask Logic Foundry for your approval, commit the
