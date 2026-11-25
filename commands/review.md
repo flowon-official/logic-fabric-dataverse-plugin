@@ -1,6 +1,7 @@
 ---
 description: Independent review of the change's artifacts against the spec, the plan and the rule catalog; writes review.md.
 argument-hint: "[artifact names, to review only those]"
+disable-model-invocation: false
 ---
 
 Stage 5 (Review) for the change in `logic-fabric/.active`, or a review of the named artifacts: $ARGUMENTS
@@ -15,12 +16,14 @@ Stage 5 (Review) for the change in `logic-fabric/.active`, or a review of the na
 4. Merge their findings into `review.md` (template in the `authoring` skill), one row per finding with severity,
    artifact, path, rule, evidence and fix. Update `findings_*` in `status.yaml`.
 5. Each blocker or major finding becomes a fix task in `plan.md` (`F-n`), unless the owner chooses to accept it as
-   a risk (ask them; it stays `open` in `review.md`, with their reason in its Fix column). The build fixes them
-   (`/logic-fabric-dataverse:build`), then review again: only the changed artifacts, closing or reopening each
-   finding. When every blocker and major finding is fixed or kept open by the owner's choice, send the change for
+   a risk (ask them; it stays `open` in `review.md`, with their reason in its Fix column). The build fixes them:
+   offer it as a choice in your question tool (`/logic-fabric-dataverse:build`; "Offer the next step" in the
+   authoring skill says how), then review again: only the changed artifacts, closing or reopening each finding. When every blocker and major finding is fixed or kept open by the owner's choice, send the change for
    acceptance through Foundry (`release`, `action: "submit"`, the `changeId`, `options.review` the full `review.md` as
    saved). Foundry records the review's findings; accepting the change then accepts the open ones as risks with the
    owner as their approver, and an open blocker needs a reviewer first. Foundry refuses `submit` while the change has
    an open blocking item: finish or close those tasks first (authoring skill). From then on Foundry makes no changes
    for it until the owner decides. Then set `stage: acceptance`. If Foundry answers that this environment doesn't keep
-   the stages of changes, set the stage anyway and say so in `build-log.md`.
+   the stages of changes, set the stage anyway and say so in `build-log.md`. Offer the next steps as choices in your
+   question tool: commit the change folder and run the acceptance (`/logic-fabric-dataverse:accept`), only commit, or
+   not now.

@@ -26,6 +26,7 @@ Follow the `logic-fabric-dataverse:authoring` skill. This is stage 1 (Prompt) fo
    and the questions. Mark a question blocking when the spec can't be written without its answer: who may run
    what, thresholds, which records, what happens on failure.
 5. Ask the blocking questions now, in one message, and record the answers. When none is open, set `stage: spec`
-   and tell the user to run `/logic-fabric-dataverse:spec`.
+   and offer the next step as a choice in your question tool: write the spec (`/logic-fabric-dataverse:spec`;
+   "Offer the next step" in the authoring skill says how).
 
 Don't write any metadata or save anything in this stage.

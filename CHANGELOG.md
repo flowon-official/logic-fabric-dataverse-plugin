@@ -4,6 +4,17 @@ Each release is tagged `v<version>`. Releases before 0.10.0 were made from
 [flowon-official/ai-plugins](https://github.com/flowon-official/ai-plugins) (then named claude-plugins), tagged
 `logic-fabric-dataverse-v<version>`; this repository keeps their history and tags them `v<version>`.
 
+## 0.12.0 (2026-11-25)
+
+- When a stage is done, the agent offers the next step as a choice (ask Logic Foundry for your approval, commit the
+  change folder, start the next stage) and takes it when you pick it, in Claude Code and GitHub Copilot; Codex names
+  the step and takes it when you answer yes. A commit takes only `logic-fabric/` and is never pushed. The agent can
+  now run the stage commands (`spec`, `plan`, `build`, `review`, `accept`) in Copilot and Codex too.
+- GitHub Copilot: the gate and the export of saved artifacts now also run when the Foundry server's name has capitals
+  (`Logic-Fabric-Foundry`, as you might name it in the Copilot app); they ran only for a lowercase `foundry`, and
+  Foundry's own gate was the only check left.
+- The README gives the GitHub Copilot app's command names (`/plan approve`) and how to sign in to Foundry in the app.
+
 ## 0.11.0 (2026-11-24)
 
 - Logic Foundry keeps each change's record in Dataverse (Logic Foundry 2.3.0 and the Logic Fabric Foundry solution

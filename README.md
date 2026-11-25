@@ -61,15 +61,20 @@ uses the plugins the CLI installed). It needs Node.js 18 or later there too.
    `.github/mcp.json`; in Codex it adds it to your Codex configuration and copies the plugin's agents into
    `.codex/agents/`.
 3. Sign in to `foundry`: Copilot asks when it first connects (trust the repository's folder when Copilot asks, or it
-   doesn't load the repository's servers); in Codex, run `codex mcp login foundry` in your terminal.
+   doesn't load the repository's servers); in Codex, run `codex mcp login foundry` in your terminal. The GitHub
+   Copilot app doesn't offer the sign-in for a repository's server: add the server once under **Customize**, with
+   the address and client ID from `.github/mcp.json`, and sign in there. Give it a name with `foundry` in it (such
+   as `Logic-Fabric-Foundry`): the plugin's hooks find Foundry's tools by that name.
 4. **Codex only:** open `/hooks` and trust the plugin's hooks. Codex runs no plugin hook until you trust it, and asks
    again whenever the hooks change. Codex also loads the agents in `.codex/agents/` (named `logic_fabric_reviewer`
    and so on) only from a folder you trust. After a plugin update, run `setup` again to refresh them.
 
 What differs from Claude Code:
 
-- The commands are skills you run by name: `/logic-fabric-dataverse:plan approve` in Copilot,
-  `$logic-fabric-dataverse:plan approve` in Codex.
+- The commands are skills you run by name: `/logic-fabric-dataverse:plan approve` in the Copilot CLI, `/plan approve`
+  in the GitHub Copilot app (its `/` menu lists them without the plugin's name), `$logic-fabric-dataverse:plan approve`
+  in Codex. In Copilot you can pick the next step instead, as in Claude Code; Codex names it and takes it when you
+  answer yes.
 - Codex can't stop a command for your approval from a hook. A command the plugin would show you for approval (such as
   importing a security role with the Logic Fabric CLI) is refused instead, and the agent tells you the command to run
   in your own terminal.
@@ -107,9 +112,11 @@ flowchart TD
 | Review | `review` | Has the change reviewed independently against the spec and the rules | | `review.md` |
 | Acceptance | `accept` | Runs the acceptance scenarios again and shows you the evidence | `accept accept`, or reject | `acceptance.md` |
 
-Each command is `/logic-fabric-dataverse:<command>`. Run `/logic-fabric-dataverse:status` at any time to see the
-stage, which approvals still hold, the tasks done and open, the last test run, the open review findings and the next
-command to run.
+Each command is `/logic-fabric-dataverse:<command>`. After `start` you rarely type one: when a stage is done, Claude
+asks what to do next, with the next step as the first choice (ask Logic Foundry for your approval, commit the change
+folder, start the next stage). Pick it and Claude runs it; an approval is still given in Logic Foundry's own dialog.
+Run `/logic-fabric-dataverse:status` at any time to see the stage, which approvals still hold, the tasks done and
+open, the last test run, the open review findings and the next step.
 
 ### Request
 
@@ -140,8 +147,9 @@ message. Nothing is built or saved in this stage.
   then it is assigned to the Senior Adjusters team and the claims manager is notified.*
 
 Claude checks the spec (criteria for every requirement, no missing column, role or team, no "to be decided") and
-shows you a summary. Approve it with `/logic-fabric-dataverse:spec approve`: Logic Foundry asks you to confirm in
-Claude Code's own dialog and records your approval (see [Approvals](#approvals)). Then commit the change folder.
+shows you a summary, then offers to ask for your approval (or run `/logic-fabric-dataverse:spec approve`): Logic
+Foundry asks you to confirm in Claude Code's own dialog and records your approval (see [Approvals](#approvals)).
+Claude then offers to commit the change folder and write the plan.
 
 ### Build plan
 
@@ -155,7 +163,8 @@ It also writes the test cases in `tests/`: every acceptance criterion, the bound
 failures, and for every access rule a user who may run it and one who may not.
 
 The plan's summary tells you what will exist, what changes, what goes live and when, what is deleted, and the
-risks. Approve it with `/logic-fabric-dataverse:plan approve`, confirm in Foundry's dialog, then commit.
+risks. Pick the approval when Claude offers it (or run `/logic-fabric-dataverse:plan approve`), confirm in Foundry's
+dialog, then let Claude commit and start the build.
 
 ### Build
 
@@ -260,8 +269,8 @@ logic-fabric/
     build-log.md  test-report.md  review.md  acceptance.md
 ```
 
-Commit it after each approval and review it like code: the approvals, tests and sources travel with your solution
-in git.
+Commit it after each approval (Claude offers to; it commits only `logic-fabric/` and never pushes) and review it like
+code: the approvals, tests and sources travel with your solution in git.
 
 ## Work with existing projects
 

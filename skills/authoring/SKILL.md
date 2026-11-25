@@ -31,6 +31,23 @@ Project-wide commands that change nothing in the project run any time: `document
 (rules), `insights` (process analysis), `secure` (security analysis); `govern` and `secure` record their run in
 Foundry. `waive` asks a reviewer to waive a governance rule, within the active change.
 
+**Offer the next step; don't leave the user to type it.** Where a command ends with a step for the user (ask for an
+approval, commit the change folder, run the next stage), ask one question with the client's question tool
+(`AskUserQuestion` in Claude Code, `ask_user` in GitHub Copilot), not in your reply, so the user picks instead of
+typing: two or three choices, the usual next step first and named in plain words, then what the user may want
+instead. Once the plan is written, for example: "Ask Foundry for my approval of the plan", "I'll read plan.md first",
+"Change something". Steps that follow each other are one question: "Commit and write the plan", "Only commit", "Not
+now". When the user picks a step, take it now:
+
+- **A stage or an approval:** run its command with the client's skill tool (`logic-fabric-dataverse:plan`, with
+  the argument `approve` for the approval) and follow it as if the user had typed it. Run a command yourself only
+  when the user picked it or asked for it. An approval is still the owner's, given to Foundry in its own dialog.
+- **A commit:** commit the workflow's files (`git add logic-fabric/`) with a message naming the change and the step
+  (`2026-11-24-claim-routing: plan approved`). Commit nothing else, and never push.
+
+A client without a question tool (Codex): end with the step and its command in one line
+(`$logic-fabric-dataverse:plan approve`), and take it when the user says yes.
+
 ## 2. The change folder
 
 ```
@@ -67,7 +84,7 @@ Templates are in [templates/](templates/). Rules:
   answered, then call `approve` again with the same text: it reports the approval, or asks again. When Foundry
   reports the approval, record `<gate>_approved_by` and `<gate>_approved_at` in `status.yaml` and leave
   `<gate>_sha256` empty: the plugin's **approval hook** stamps it with the approved file's hash, the same hash Foundry
-  returns (ticking a task's checkbox doesn't count as a change; editing its text does). Then ask the owner to commit.
+  returns (ticking a task's checkbox doesn't count as a change; editing its text does). Then offer to commit.
   If the owner declines, nothing is approved: ask what to change. To approve again after an amendment, approve
   through Foundry again and record the new approval with `<gate>_sha256` emptied. Acceptance works the same way
   (`options.gate: "acceptance"`, `options.text` the `acceptance.md`): the owner accepts, or sends the change back to

@@ -1,6 +1,7 @@
 ---
 description: Write the change's spec in Logic Fabric terms, check it, and take the owner's approval.
 argument-hint: "[approve]"
+disable-model-invocation: false
 ---
 
 Follow the `logic-fabric-dataverse:authoring` skill. Stage 2 (Spec) for the change in `logic-fabric/.active`.
@@ -8,9 +9,11 @@ Follow the `logic-fabric-dataverse:authoring` skill. Stage 2 (Spec) for the chan
 If the argument is `approve`: ask Foundry for the owner's approval (`release`, `action: "approve"`, `options.gate:
 "spec"`, `options.text` the full `spec.md`, `options.requirements` the spec's requirements as data, and
 `options.quick: true` for a quick change whose spec carries its task list; see the authoring skill). Once Foundry reports it approved, record `spec_approved_by` and `spec_approved_at` in
-`status.yaml` with `spec_sha256` empty (the approval hook stamps it), set `stage: plan` (or, for a quick change, go
-straight to the build), and ask the owner to commit the change folder. If the owner declined, ask what to change.
-Stop there.
+`status.yaml` with `spec_sha256` empty (the approval hook stamps it), set `stage: plan` (or, for a quick change,
+`build`), and offer the next steps as choices in your question tool: commit the change folder and write the plan
+(start the build, for a quick change), only commit, or not now ("Offer the next step" in the authoring skill says
+how). If the owner declined, ask what to change.
+Then stop, unless the user picked a step.
 
 Otherwise:
 
@@ -27,8 +30,9 @@ Otherwise:
 3. Run the spec checks: every requirement has criteria with concrete values; every table, column and choice exists
    or is declared new; every entry point has an access statement whose roles, teams, business units and queues
    exist; names are unique; no TBD. Fix what fails.
-4. Show the owner a short summary (requirements, what is new and changed, the access rules) and ask for approval
-   with `/logic-fabric-dataverse:spec approve`.
+4. Show the owner a short summary (requirements, what is new and changed, the access rules) and offer the next
+   step as choices in your question tool: ask Foundry for their approval now (`/logic-fabric-dataverse:spec
+   approve`), let them read `spec.md` first, or change something.
 
 A **quick change** (at most two artifacts, no data model change): set `quick: true` in `status.yaml`, add the
 plan's task list at the end of `spec.md`, and ask for one approval that covers both.

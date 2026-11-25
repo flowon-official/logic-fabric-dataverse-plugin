@@ -1,7 +1,7 @@
 {
   "name": "logic-fabric-dataverse",
   "displayName": "Logic Fabric for Dataverse",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Build Logic Fabric for Dataverse solutions like software: request, spec, approved build plan, build with tests, review and acceptance, through your Logic Foundry MCP server. Also documents, governs, analyzes and security-reviews existing projects.",
   "author": {
     "name": "Flowon"
@@ -11,7 +11,9 @@
   "license": "LicenseRef-Flowon",
   "privacyPolicyUrl": "https://www.flowon.com/privacy-policy",
   "network": {
-    "hosts": ["login.microsoftonline.com"]
+    "hosts": [
+      "login.microsoftonline.com"
+    ]
   },
   "keywords": [
     "dataverse",

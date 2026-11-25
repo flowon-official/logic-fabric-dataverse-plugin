@@ -3,7 +3,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": ".*foundry.*.*",
+        "matcher": ".*[Ff][Oo][Uu][Nn][Dd][Rr][Yy].*.*",
         "hooks": [
           {
             "type": "command",
@@ -35,7 +35,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": ".*foundry.*(save|delete)",
+        "matcher": ".*[Ff][Oo][Uu][Nn][Dd][Rr][Yy].*(save|delete)",
         "hooks": [
           {
             "type": "command",

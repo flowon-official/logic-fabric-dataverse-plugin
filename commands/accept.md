@@ -1,6 +1,7 @@
 ---
 description: Run the acceptance scenarios on fresh fixtures, show the evidence to the owner and record the decision.
 argument-hint: "[accept | reject spec | reject build]"
+disable-model-invocation: false
 ---
 
 Follow the `logic-fabric-dataverse:testing` skill. Stage 6 (Acceptance) for the change in `logic-fabric/.active`.
@@ -23,13 +24,15 @@ Follow the `logic-fabric-dataverse:testing` skill. Stage 6 (Acceptance) for the 
    - **Accepted**: record `accepted_by` and `accepted_at` in `status.yaml` and `acceptance.md`, set `stage: accepted`,
      merge the glossary additions into `logic-fabric/glossary.md`, copy the change's tests into
      `logic-fabric/baseline/tests/` (the regression set), update the as-built requirements document with the
-     `logic-fabric-dataverse:documenter` agent, clear `logic-fabric/.active`, and tell the owner the change is ready
-     for ALM (export the solution and run the pipeline). Foundry has closed it: work after that, undoing it included,
-     is a new change.
+     `logic-fabric-dataverse:documenter` agent, clear `logic-fabric/.active`, tell the owner the change is ready
+     for ALM (export the solution and run the pipeline), and offer, as a choice in your question tool, to commit the
+     workflow's files ("Offer the next step" in the authoring skill says how). Foundry has closed
+     it: work after that, undoing it included, is a new change.
    - **Sent back to the build or the spec**: record the reason in `acceptance.md`, and `rejected_by` and
      `rejected_reason` (a new reason) in `status.yaml` in the same edit that sets the stage back to `build` or `spec`;
      the stage hook refuses the move without them. Sent back to the spec, Foundry has cleared the spec and plan
-     approvals: both are approved again before anything is built.
+     approvals: both are approved again before anything is built. Offer the next step as a choice in your question
+     tool: the build or the spec.
    - **No decision**: nothing was recorded; the change is still waiting for acceptance.
 
 Only when Foundry answers that this environment doesn't keep the stages of changes, or can't ask the owner at all,

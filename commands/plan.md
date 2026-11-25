@@ -1,6 +1,7 @@
 ---
 description: Turn the approved spec into an ordered build plan and its test cases, and take the owner's approval.
 argument-hint: "[approve]"
+disable-model-invocation: false
 ---
 
 Follow the `logic-fabric-dataverse:authoring` and `logic-fabric-dataverse:testing` skills. Stage 3 (Build plan)
@@ -9,7 +10,9 @@ for the change in `logic-fabric/.active`.
 If the argument is `approve`: ask Foundry for the owner's approval (`release`, `action: "approve"`, `options.gate:
 "plan"`, `options.text` the full `plan.md`, `options.tasks` the plan's tasks as data; see the authoring skill). Once Foundry reports it approved, record
 `plan_approved_by` and `plan_approved_at` in `status.yaml` with `plan_sha256` empty (the approval hook stamps it),
-set `stage: build`, and ask the owner to commit. If the owner declined, ask what to change. Stop there.
+set `stage: build`, and offer the next steps as choices in your question tool: commit the change folder and start
+the build, only commit, or not now ("Offer the next step" in the authoring skill says how). If the owner declined,
+ask what to change. Then stop, unless the user picked a step.
 
 Otherwise:
 
@@ -32,5 +35,6 @@ Otherwise:
    that target it (add `retired: <this change>` to each; never delete test files).
 4. Write `tests/<id>.yaml` for every acceptance criterion and every case the `testing` skill's table asks for,
    including allowed and refused personas for each precondition.
-5. Show the owner the summary (what will exist, what changes, what goes live and when, deletions, risks) and ask
-   for approval with `/logic-fabric-dataverse:plan approve`.
+5. Show the owner the summary (what will exist, what changes, what goes live and when, deletions, risks) and offer
+   the next step as choices in your question tool: ask Foundry for their approval now
+   (`/logic-fabric-dataverse:plan approve`), let them read `plan.md` first, or change something.
