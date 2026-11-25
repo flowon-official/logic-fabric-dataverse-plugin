@@ -164,12 +164,16 @@ of the project). Foundry never switches it off: only a person does, in Dataverse
 ### Work Foundry can't do
 
 Do everything Foundry can do through Foundry: reference rows are `save` `kind: "record"` (dates and numbers
-included), never a script. A few tasks need the `flowon-dynamics` command-line tool instead, such as security roles
-(`import -sf security.xml`; Foundry's `security` only reads them). **Never hand the user a command or a script to
-run themselves.** Do the task with their approval:
+included), never a script. A few tasks need the `flowon-dynamics` command-line tool instead, such as business units,
+security roles and teams: the security file (`import -sf security.xml`). Foundry's `security` only reads them, and
+they aren't reference rows: never save or delete a business unit, team, role, user or their memberships as a
+`record` (the gate hook refuses it). **Never hand the user a command or a script to run themselves.** Do the task
+with their approval:
 
-1. Prepare it: the file the command reads and the exact command. For roles, start from `export-security` of a
-   similar role, and preview with `import -sf security.xml --security-what-if` (it changes nothing).
+1. Prepare it: the file the command reads and the exact command. Write business units and teams into the security
+   file as the `cli` skill's reference describes (a business unit by its path from the root, such as `/Procurement`;
+   a team with its business unit, type and administrator); for roles, start from `export-security` of a similar role.
+   Preview with `import -sf security.xml --security-what-if` (it changes nothing).
 2. Ask the user in one question (`AskUserQuestion` in Claude Code): what will be created or changed, in which
    environment (development only), the preview's result, and the command. Offer approve and don't.
 3. On approval, run it yourself. The plugin's Dataverse hook shows the command in your client's approval prompt (in
@@ -193,8 +197,10 @@ run themselves.** Do the task with their approval:
 not in the maker portal (a browser pane included), and not through the Web API, an SDK script or a connection
 string. Changes made that way skip the plan check, the Dataverse hook and the export to `artifacts/`.
 
-Security roles created this way aren't in the project's solution: they move to test and production as
-`security.xml` (`export-security` here, `import -sf` there) in the pipeline. Commit the file with the change.
+Business units, security roles and teams created this way aren't in the project's solution (business units and
+teams are data, not solution components): they move to test and production as `security.xml` (`export-security`
+here, `import -sf` there) in the pipeline. Commit the file with the change. A test can still use a business unit of
+its own as a fixture (testing skill): that one exists only for the test run.
 
 ## 4. What you must know before writing metadata
 

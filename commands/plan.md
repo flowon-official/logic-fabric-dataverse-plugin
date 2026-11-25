@@ -25,7 +25,7 @@ Otherwise:
    definitions, processes (draft), event handlers, and **go-live tasks last** (enable recipes, publish processes,
    enable schedules, expose agent tools).
 3. Each task: inputs and outputs, the `Precondition:` line (entry point with its policy, condition and code, or
-   internal and why), dependencies, test case IDs, done-when. A task Foundry can't do (security roles) says
+   internal and why), dependencies, test case IDs, done-when. A task Foundry can't do (business units, security roles, teams) says
    `Tool: flowon-dynamics` with the command and its preview, so the owner approves it with the plan; the build still
    asks before running it. Changes to existing artifacts list their consumers (`usedBy` of `get` with
    dependencies; a flow's or block's own-kind dependency list holds what it calls, not its callers) and add those

@@ -224,9 +224,11 @@ The plugin's hooks keep the workflow in place, whatever Claude is asked:
 - Each approval is stamped with a fingerprint of the file you approved. If the spec or plan is edited afterwards,
   building stops until you approve it again. Ticking off a task doesn't count as an edit.
 - A delete goes through only when the approved plan names it.
-- The few tasks Foundry can't do, such as creating security roles with the Flowon command-line tool, Claude
-  prepares, previews and runs itself after asking you: Claude Code shows you each such command for approval. They
-  follow the same rules as Foundry changes, and a command aimed at a test or production environment is refused.
+- The few tasks Foundry can't do, such as creating business units, security roles and teams with the Flowon
+  command-line tool's security file, Claude prepares, previews and runs itself after asking you: Claude Code shows you
+  each such command for approval. They follow the same rules as Foundry changes, and a command aimed at a test or
+  production environment is refused. The security file also takes them to test and production, so Foundry never
+  creates them as reference rows.
 - Stages only move forward, except when you reject at acceptance, and a change can't retire its own tests to make
   them pass.
 - At every prompt, Claude is told the active change, its stage and whether its approvals still hold.

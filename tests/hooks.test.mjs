@@ -107,6 +107,21 @@ describe('the gate on Claude Code', () => {
     assert.equal(approve('exception', '{"rule":"LF-011"}').decision, 'allow');
   });
 
+  test('business units, teams, roles and users aren\'t saved or deleted as reference rows', () => {
+    const ws = built();
+    const record = (tool, table) => claude(ws, tool, { kind: 'record', name: 'Procurement', metadata: { values: { name: 'Procurement' } }, options: { table } });
+
+    const unit = record('save', 'businessunit');
+    assert.equal(unit.decision, 'deny');
+    assert.match(unit.reason, /security file \(import -sf security\.xml\)/);
+    assert.equal(record('save', 'Team').decision, 'deny');
+    assert.equal(record('delete', 'role').decision, 'deny');
+    assert.equal(record('save', 'systemuser').decision, 'deny');
+
+    // Other reference rows still go through Foundry.
+    assert.equal(record('save', 'fodemos_suppliercategory').decision, 'allow');
+  });
+
   test('outside a workspace, an approval isn\'t checked', () => {
     const root = mkdtempSync(join(tmpdir(), 'lf-hooks-'));
     roots.push(root);

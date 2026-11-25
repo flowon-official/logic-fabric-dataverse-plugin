@@ -4,6 +4,15 @@ Each release is tagged `v<version>`. Releases before 0.10.0 were made from
 [flowon-official/ai-plugins](https://github.com/flowon-official/ai-plugins) (then named claude-plugins), tagged
 `logic-fabric-dataverse-v<version>`; this repository keeps their history and tags them `v<version>`.
 
+## 0.13.2 (2026-11-25)
+
+- Business units and teams are made like security roles: with the Logic Fabric CLI's security file (`import -sf
+  security.xml`), which also takes them to test and production, as a `Tool: flowon-dynamics` task of the plan. The
+  authoring skill says how to write them into the file (a business unit by its path from the root, a team with its
+  business unit, type and administrator). The gate hook refuses a Foundry `record` save or delete of a business unit,
+  team, role, user or their memberships: Foundry would make them as plain rows in this environment only, outside the
+  solution. A test can still create a business unit as a fixture.
+
 ## 0.13.1 (2026-11-25)
 
 - An approval of the spec, plan or acceptance goes to Logic Foundry only with the change's file as saved: the gate hook

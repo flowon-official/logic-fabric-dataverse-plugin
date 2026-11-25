@@ -18,6 +18,9 @@ const WRITES = new Set(['save', 'delete', 'release', 'test']);
 // The file each approval gate approves, in the change's folder.
 const APPROVED_FILES = { spec: 'spec.md', plan: 'plan.md', acceptance: 'acceptance.md' };
 
+// Dataverse's security model, which Foundry's record save would write as plain rows.
+const SECURITY_TABLES = new Set(['businessunit', 'team', 'role', 'systemuser', 'teammembership', 'teamroles', 'systemuserroles']);
+
 const deny = reason => decide('PreToolUse', 'deny', reason);
 
 const input = await readInput();
@@ -92,6 +95,14 @@ if (!workspace) {
 
 if (!isOwnWorkspace(workspace)) {
   deny(`This repository's Logic Fabric workspace is for the ${workspaceOffering(workspace)} offering (offering in logic-fabric/workspace.yaml). The Logic Fabric for Dataverse plugin changes Logic Foundry only from a workspace for ${OFFERING}.`);
+}
+
+// Business units, teams, roles and users aren't reference rows: a record save would make them in this environment
+// only, outside the solution and its pipeline, so they come from the security file of the Logic Fabric CLI.
+const securityTable = String((typeof args.options === 'object' && args.options?.table) || '').toLowerCase();
+
+if ((tool === 'save' || tool === 'delete') && String(args.kind || '').toLowerCase() === 'record' && SECURITY_TABLES.has(securityTable)) {
+  deny(`A ${securityTable} row isn't a reference row for Foundry's record ${tool}: business units, teams and roles are made with the Logic Fabric CLI's security file (import -sf security.xml), which also moves them to test and production, and users and memberships belong to the environment's administrators. Plan it as a Tool: flowon-dynamics task (authoring skill, "Work Foundry can't do").`);
 }
 
 const { refusal, change, approved } = buildRefusal(workspace, `Foundry ${tool}`, tool === 'test' ? ['build', 'review', 'acceptance'] : ['build', 'review']);
