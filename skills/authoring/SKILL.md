@@ -84,7 +84,12 @@ Templates are in [templates/](templates/). Rules:
   answered, then call `approve` again with the same text: it reports the approval, or asks again. When Foundry
   reports the approval, record `<gate>_approved_by` and `<gate>_approved_at` in `status.yaml` and leave
   `<gate>_sha256` empty: the plugin's **approval hook** stamps it with the approved file's hash, the same hash Foundry
-  returns (ticking a task's checkbox doesn't count as a change; editing its text does). Then offer to commit.
+  returns (ticking a task's checkbox doesn't count as a change; editing its text does). Never write a hash yourself, and
+  don't hash the file to check Foundry's: both are of the normalized text (LF line endings, task checkboxes cleared,
+  indented `Blocked:` lines removed), so a hash of the raw file differs and proves nothing; the context hook says
+  whether the file still matches its approval. Ask for one approval per version of the file, with its full text: the
+  gate hook refuses an approval whose text isn't the file as saved, and the same text again changes nothing. Then
+  offer to commit.
   If the owner declines, nothing is approved: ask what to change. To approve again after an amendment, approve
   through Foundry again and record the new approval with `<gate>_sha256` emptied. Acceptance works the same way
   (`options.gate: "acceptance"`, `options.text` the `acceptance.md`): the owner accepts, or sends the change back to

@@ -4,6 +4,16 @@ Each release is tagged `v<version>`. Releases before 0.10.0 were made from
 [flowon-official/ai-plugins](https://github.com/flowon-official/ai-plugins) (then named claude-plugins), tagged
 `logic-fabric-dataverse-v<version>`; this repository keeps their history and tags them `v<version>`.
 
+## 0.13.1 (2026-11-25)
+
+- An approval of the spec, plan or acceptance goes to Logic Foundry only with the change's file as saved: the gate hook
+  compares `options.text` with `spec.md`, `plan.md` or `acceptance.md`, as their hash normalizes them (line endings,
+  ticked task boxes, `Blocked:` lines), and refuses a placeholder, a summary or part of the file, saying where it
+  differs. An agent sent the placeholder `__SPEC__` and two partial specs for approval, and the owner approved them.
+- The authoring skill says not to hash an approved file to check Foundry's hash (both are of the normalized text, so
+  a raw hash differs), never to write one, and to ask for one approval per version of the file. An agent that
+  compared raw hashes asked for the same plan approval three times.
+
 ## 0.13.0 (2026-11-25)
 
 - Autonumber columns: the schema reference describes `autoNumber` on text columns and on a table's primary column

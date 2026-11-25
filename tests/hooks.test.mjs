@@ -68,15 +68,49 @@ describe('the gate on Claude Code', () => {
   });
 
   test('approving, submitting for acceptance, the owner deciding and blocked tasks are no writes', () => {
-    const ws = workspace('review', { 'spec.md': spec, 'plan.md': plan }, {
+    const acceptance = '# Acceptance\n- AC-1.1 passed\n';
+    const ws = workspace('review', { 'spec.md': spec, 'plan.md': plan, 'acceptance.md': acceptance }, {
       stage: 'acceptance', quick: 'false', spec_sha256: f => hash(f['spec.md']), plan_sha256: f => hash(f['plan.md']),
     });
-    assert.equal(claude(ws, 'release', { action: 'approve', options: { gate: 'acceptance' } }).decision, 'allow');
+    assert.equal(claude(ws, 'release', { action: 'approve', changeId: 'review', options: { gate: 'acceptance', text: acceptance } }).decision, 'allow');
     assert.equal(claude(ws, 'release', { action: 'submit', changeId: 'review' }).decision, 'allow');
     assert.equal(claude(ws, 'release', { action: 'block', changeId: 'review', options: { task: 'T-07' } }).decision, 'allow');
     assert.equal(claude(ws, 'release', { action: 'unblock', changeId: 'review', options: { task: 'T-07' } }).decision, 'allow');
     assert.equal(claude(ws, 'release', { action: 'publish', kind: 'businessProcess', name: 'P' }).decision, 'deny');
     assert.equal(claude(ws, 'test', {}).decision, 'allow');
+  });
+
+  test('an approval sends the change\'s file as saved, not a placeholder, a summary or part of it', () => {
+    const planWithTasks = '# Plan\n## Summary for approval\n- Delete logicBlock Financials_Y: replaced\n\n- [ ] T-01 Save it\n- [ ] T-02 Test it\n';
+    const ws = workspace('planning', { 'spec.md': spec, 'plan.md': planWithTasks }, { stage: 'plan', quick: 'false', spec_sha256: f => hash(f['spec.md']) });
+    const approve = (gate, text, changeId = 'planning') => claude(ws, 'release', { action: 'approve', changeId, options: { gate, text } });
+
+    // The file's text passes, also with CRLF line endings, ticked tasks or a Blocked: line, which the hash ignores.
+    assert.equal(approve('plan', planWithTasks).decision, 'allow');
+    assert.equal(approve('plan', planWithTasks.replace(/\n/g, '\r\n').replace('- [ ] T-01', '- [x] T-01').replace('- [ ] T-02 Test it\n', '- [ ] T-02 Test it\n  Blocked: a role is missing\n')).decision, 'allow');
+    assert.equal(approve('spec', spec).decision, 'allow');
+
+    const placeholder = approve('spec', '__SPEC__');
+    assert.equal(placeholder.decision, 'deny');
+    assert.match(placeholder.reason, /isn't planning\/spec\.md as saved \(it differs from line 1/);
+
+    const partial = approve('plan', planWithTasks.split('\n').slice(0, 3).join('\n') + '\n');
+    assert.equal(partial.decision, 'deny');
+    assert.match(partial.reason, /differs from line 5: 4 lines sent, 7 in the file/);
+
+    assert.match(approve('plan', undefined).reason, /no text was sent/);
+    assert.match(approve('acceptance', '# Acceptance').reason, /acceptance\.md doesn't exist yet/);
+    assert.match(approve('plan', planWithTasks, 'another-change').reason, /no change folder logic-fabric\/changes\/another-change\//);
+
+    // Without a changeId, the active change's file; a waiver's text isn't a file of the change.
+    assert.equal(claude(ws, 'release', { action: 'approve', options: { gate: 'plan', text: planWithTasks } }).decision, 'allow');
+    assert.equal(approve('exception', '{"rule":"LF-011"}').decision, 'allow');
+  });
+
+  test('outside a workspace, an approval isn\'t checked', () => {
+    const root = mkdtempSync(join(tmpdir(), 'lf-hooks-'));
+    roots.push(root);
+    assert.equal(run('gate.mjs', { cwd: root, tool_name: 'mcp__plugin_logic-fabric-dataverse_foundry__release', tool_input: { action: 'approve', options: { gate: 'spec', text: '__SPEC__' } } }).decision, 'allow');
   });
 
   test('the answer is Claude Code\'s hookSpecificOutput', () => {

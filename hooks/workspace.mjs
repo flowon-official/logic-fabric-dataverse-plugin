@@ -164,14 +164,18 @@ export function changeStatusFile(cwd, path) {
 // file out with CRLF or LF, with task checkboxes cleared, so ticking a task in the approved plan (- [ ] to - [x])
 // isn't a change to what was approved, and without the indented "Blocked: <reason>" lines the build adds under a
 // task it can't finish, which are progress too. approval.mjs stamps approvals with it; gate.mjs and context.mjs
-// compare against it.
+// compare against it. Logic Foundry hashes an approved text the same way (ChangeText.Sha256).
 export function sha256(file) {
   if (!existsSync(file)) {
     return null;
   }
-  const text = readFileSync(file, 'utf8').replace(/\r\n/g, '\n').replace(/^(\s*[-*+] )\[[xX]\]/gm, '$1[ ]')
+  return createHash('sha256').update(approvedText(readFileSync(file, 'utf8'))).digest('hex');
+}
+
+// An approved file's text as its hash sees it: LF line endings, task checkboxes cleared, no indented Blocked: lines.
+export function approvedText(text) {
+  return String(text ?? '').replace(/\r\n/g, '\n').replace(/^(\s*[-*+] )\[[xX]\]/gm, '$1[ ]')
     .replace(/^[ \t]+Blocked:.*\n?/gm, '');
-  return createHash('sha256').update(text).digest('hex');
 }
 
 // The hook's input in Claude Code's shape, whichever client sent it (client.mjs).
