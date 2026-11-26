@@ -61,13 +61,19 @@ export function normalize(raw) {
 }
 
 // The tool's own name: Claude's mcp__plugin_<plugin>_<server>__<tool>, Codex's mcp__<server>__<tool>, Copilot's
-// <server>-<tool>, or a server/tool form, all give <tool>. Logic Foundry's tool names have no hyphens.
+// <server>-<tool>, or a server/tool form, all give <tool>. So does Codex's mcp__codex_apps__<app>__<tool> for Foundry
+// added to ChatGPT as an app, which Codex reaches through ChatGPT (<app> is the app's name, such as
+// logic_fabric_foundry_1), and the model's mcp__codex_apps__<app>_<tool>: there the name is the last word, since the
+// tools the hooks check (save, delete, release, test, run) are one word. Logic Foundry's tool names have no hyphens.
 export function toolName(input) {
-  return String(input.tool_name || '').split(/__|\/|-/).pop();
+  const name = String(input.tool_name || '');
+  const tool = name.split(/__|\/|-/).pop();
+
+  return name.startsWith('mcp__codex_apps__') ? tool.split('_').pop() : tool;
 }
 
-// Whether the tool is one of Logic Foundry's. Claude Code's and Codex's matchers pick Foundry's tools already; a client
-// whose hooks see every tool relies on this.
+// Whether the tool is one of Logic Foundry's. Claude Code's and Codex's matchers pick Foundry's tools already (in Codex
+// also a ChatGPT app with "foundry" in its name); a client whose hooks see every tool relies on this.
 export function isFoundryTool(input) {
   return /foundry/i.test(String(input.tool_name || ''));
 }

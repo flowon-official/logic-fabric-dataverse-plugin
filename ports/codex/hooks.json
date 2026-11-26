@@ -3,7 +3,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "mcp__foundry__.*",
+        "matcher": "mcp__foundry__.*|mcp__codex_apps__.*[Ff][Oo][Uu][Nn][Dd][Rr][Yy].*_.*",
         "hooks": [
           {
             "type": "command",
@@ -35,7 +35,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "mcp__foundry__(save|delete)",
+        "matcher": "mcp__foundry__(save|delete)|mcp__codex_apps__.*[Ff][Oo][Uu][Nn][Dd][Rr][Yy].*_(save|delete)",
         "hooks": [
           {
             "type": "command",
