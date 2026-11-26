@@ -4,6 +4,13 @@ Each release is tagged `v<version>`. Releases before 0.10.0 were made from
 [flowon-official/ai-plugins](https://github.com/flowon-official/ai-plugins) (then named claude-plugins), tagged
 `logic-fabric-dataverse-v<version>`; this repository keeps their history and tags them `v<version>`.
 
+## 0.14.1 (2026-11-26)
+
+- The requirements document gives the current values of the reference data its logic reads, such as limits, rates or
+  policy parameters: the documenter agent now has Logic Foundry's `lookup` tool. Before, it couldn't read rows, so it
+  could only give the values a change had loaded, or none. It reads no business records, such as customers or
+  applications.
+
 ## 0.14.0 (2026-11-26)
 
 - The requirements document comes as Markdown, Word or PDF: add `word` or `pdf` to `document`, for example
