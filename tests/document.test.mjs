@@ -175,6 +175,7 @@ test('the PDF page has the tables, lists and links, escaped', () => {
   assert.match(html, /2 days<br>then escalates/);
   assert.match(html, /<title>Claims &quot;BRD&quot; &lt;\/style&gt;<\/title>/);
   assert.equal(html.match(/<\/style>/g).length, 1, 'the title in the footer does not end the style');
+  assert.match(html, /<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">/, 'no scripts, nothing loaded');
 });
 
 test('without a browser to print it, the PDF is left as a page to print', () => {

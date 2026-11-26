@@ -91,7 +91,7 @@ const ITEM = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
 const DELIMITER = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 
 export function parse(text) {
-  return blocks(String(text).replace(/^﻿/, '').replace(/\r\n?/g, '\n').split('\n'));
+  return blocks(String(text).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').split('\n'));
 }
 
 function startsBlock(line) {
@@ -243,7 +243,7 @@ function cells(line) {
 
 // Escaped characters are held as private-use characters while the inline marks are read, then given back.
 const ESCAPED = /\\([\\`*_{}[\]()#+\-.!|<>~])/g;
-const HELD = /[-]/g;
+const HELD = /[\uE000-\uE0FF]/g;
 const INLINE = /`([^`]+)`|\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)|<br\s*\/?>|\*\*(?=\S)(.+?)(?<=\S)\*\*|__(?=\S)(.+?)(?<=\S)__(?!\w)|(?<![\w*])\*(?=\S)(.+?)(?<=\S)\*(?![\w*])|(?<![\w_])_(?=\S)(.+?)(?<=\S)_(?![\w_])/g;
 
 export function inlines(source) {
@@ -282,8 +282,8 @@ function documentTitle(blocks) {
 const LINK = /^(https?:|mailto:)/i;
 
 // Right-to-left text (Arabic, Hebrew and the like), for a paragraph whose first letter is one.
-const RTL = /[֐-ࣿיִ-﷿ﹰ-﻿]/;
-const LETTER = /[A-Za-zÀ-ɏͰ-ϿЀ-ӿ]|[֐-ࣿיִ-﷿ﹰ-﻿]/;
+const RTL = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+const LETTER = /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF]|[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
 
 function rightToLeft(runs) {
   const first = LETTER.exec(plain(runs));
@@ -326,6 +326,7 @@ export function toHtml(blocks, { title = 'Document' } = {}) {
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
 <title>${esc(title)}</title>
 <style>
 @page { size: A4; margin: 18mm 16mm 20mm;
@@ -397,7 +398,7 @@ function htmlList(list) {
   const tag = list.ordered ? 'ol' : 'ul';
   const start = list.ordered && list.start !== 1 ? ` start="${list.start}"` : '';
   const items = list.items.map(item => {
-    const box = item.task ? `<span class="box">${item.task === 'done' ? '☑' : '☐'}</span>` : '';
+    const box = item.task ? `<span class="box">${item.task === 'done' ? '\u2611' : '\u2610'}</span>` : '';
     return `<li${item.task ? ' class="task"' : ''} dir="auto">${box}${htmlRuns(item.inlines)}${item.children.map(htmlList).join('')}</li>`;
   });
   return `<${tag}${start}>${items.join('')}</${tag}>`;
@@ -444,7 +445,9 @@ export function findBrowser(env = process.env, platform = process.platform) {
 }
 
 // Prints the page to the PDF file with the browser, headless, with a profile of its own that is deleted after;
-// returns null, or why it couldn't.
+// returns null, or why it couldn't. Where Linux doesn't let the browser start its sandbox (as on Ubuntu, which
+// restricts the namespaces it needs), it prints again without one: the page is the script's own, with no scripts and
+// nothing to load (its content security policy allows neither).
 function printPdf(browser, html, pdf) {
   const work = mkdtempSync(join(tmpdir(), 'lf-document-'));
 
@@ -457,18 +460,30 @@ function printPdf(browser, html, pdf) {
       return `${pdf} is open in another program; close it and run this again`;
     }
 
-    const result = spawnSync(browser, [
+    const print = sandbox => spawnSync(browser, [
       '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-extensions',
       '--disable-background-networking', '--disable-sync', `--user-data-dir=${join(work, 'profile')}`,
       '--no-pdf-header-footer', '--print-to-pdf-no-header', '--generate-pdf-document-outline',
-      `--print-to-pdf=${pdf}`, pathToFileURL(page).href,
-    ], { stdio: 'ignore', timeout: 120000, windowsHide: true });
+      ...(sandbox ? [] : ['--no-sandbox']), `--print-to-pdf=${pdf}`, pathToFileURL(page).href,
+    ], { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8', maxBuffer: 16 * 1024 * 1024, timeout: 120000, windowsHide: true });
+    const printed = () => existsSync(pdf) && statSync(pdf).size > 0;
 
-    if (existsSync(pdf) && statSync(pdf).size > 0) {
+    let result = print(true);
+    if (!printed() && !result.error && process.platform === 'linux') {
+      result = print(false);
+    }
+
+    if (printed()) {
       return null;
     }
 
-    return result.error ? `${basename(browser)} didn't run (${result.error.code || result.error.message})` : `${basename(browser)} didn't write it`;
+    if (result.error) {
+      return `${basename(browser)} didn't run (${result.error.code || result.error.message})`;
+    }
+
+    // The browser's last error, without its [process:thread:time:LEVEL:source] prefix.
+    const errors = String(result.stderr || '').split('\n').map(l => l.replace(/^\[[^\]]*\]\s*/, '').trim()).filter(l => /error|fatal|sandbox|denied|failed/i.test(l));
+    return `${basename(browser)} didn't write it${errors.length ? ` (${errors[errors.length - 1].slice(0, 200)})` : ''}`;
   } finally {
     try {
       rmSync(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
@@ -490,7 +505,7 @@ const ALIGN = { left: 'left', center: 'center', right: 'right' };
 const SPACER = '<w:p><w:pPr><w:pStyle w:val="Spacer"/></w:pPr></w:p>';
 
 const xml = s => String(s)
-  .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g, '')
+  .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 export function toDocx(blocks, { title = 'Document', created = new Date() } = {}) {
@@ -575,7 +590,7 @@ function wList(list, context, depth) {
     const runs = wRuns(item.inlines, context);
     const bidi = rightToLeft(item.inlines);
     const paragraph = item.task
-      ? wParagraph(`<w:r><w:t>${item.task === 'done' ? '☑' : '☐'}</w:t></w:r><w:r><w:tab/></w:r>${runs}`, { style: 'ListParagraph', bidi, indent: `<w:ind w:left="${360 * (level + 1)}" w:hanging="360"/>` })
+      ? wParagraph(`<w:r><w:t>${item.task === 'done' ? '\u2611' : '\u2610'}</w:t></w:r><w:r><w:tab/></w:r>${runs}`, { style: 'ListParagraph', bidi, indent: `<w:ind w:left="${360 * (level + 1)}" w:hanging="360"/>` })
       : wParagraph(runs, { style: 'ListParagraph', numbered, level, bidi });
     return paragraph + item.children.map(child => wList(child, context, depth + 1)).join('');
   }).join('');
@@ -609,7 +624,7 @@ function numbering(numbers) {
   const levels = bullet => Array.from({ length: 9 }, (_, l) => {
     // Numbers at every level, as in the PDF.
     const format = bullet ? 'bullet' : 'decimal';
-    const text = bullet ? ['•', '◦', '▪'][l % 3] : `%${l + 1}.`;
+    const text = bullet ? ['\u2022', '\u25E6', '\u25AA'][l % 3] : `%${l + 1}.`;
     const font = bullet ? '<w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:hint="default"/></w:rPr>' : '';
     return `<w:lvl w:ilvl="${l}"><w:start w:val="1"/><w:numFmt w:val="${format}"/><w:lvlText w:val="${text}"/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="${360 * (l + 1)}" w:hanging="360"/></w:pPr>${font}</w:lvl>`;
   }).join('');
