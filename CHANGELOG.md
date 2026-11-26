@@ -4,6 +4,13 @@ Each release is tagged `v<version>`. Releases before 0.10.0 were made from
 [flowon-official/ai-plugins](https://github.com/flowon-official/ai-plugins) (then named claude-plugins), tagged
 `logic-fabric-dataverse-v<version>`; this repository keeps their history and tags them `v<version>`.
 
+## 0.13.3 (2026-11-26)
+
+- Codex: the workflow's checks also cover Logic Foundry when Codex reaches it through ChatGPT, as a ChatGPT app with
+  "Foundry" in its name (Codex names its tools `mcp__codex_apps__<app>__<tool>`). Before, the gate hook and the export
+  of saved artifacts didn't run for those calls. Codex doesn't run a plugin's changed hooks until you trust them
+  again, so trust them in `/hooks` after updating.
+
 ## 0.13.2 (2026-11-25)
 
 - Business units and teams are made like security roles: with the Logic Fabric CLI's security file (`import -sf

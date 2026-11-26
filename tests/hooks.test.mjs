@@ -183,6 +183,30 @@ describe('the hooks on Codex', () => {
     assert.equal(answer.hookSpecificOutput.permissionDecision, 'deny');
   });
 
+  // Foundry added to ChatGPT as an app, which Codex reaches through ChatGPT: its hooks name the tool
+  // mcp__codex_apps__<app>__<tool>, and the model mcp__codex_apps__<app>_<tool>.
+  test('Foundry\'s tools through a ChatGPT app are checked as Foundry\'s own', () => {
+    const planning = workspace('planning', { 'spec.md': spec }, { stage: 'plan', quick: 'false' });
+    const ws = built();
+
+    for (const name of ['mcp__codex_apps__logic_fabric_foundry_1__save', 'mcp__codex_apps__logic_fabric_foundry_1_save']) {
+      assert.equal(run('gate.mjs', { cwd: planning.root, hook_event_name: 'PreToolUse', tool_name: name, tool_input: { kind: 'logicFlow' } }, 'codex').decision, 'deny', name);
+      assert.equal(run('gate.mjs', { cwd: ws.root, hook_event_name: 'PreToolUse', tool_name: name, tool_input: { kind: 'logicFlow' } }, 'codex').decision, 'allow', name);
+    }
+
+    const unlisted = run('gate.mjs', { cwd: ws.root, hook_event_name: 'PreToolUse', tool_name: 'mcp__codex_apps__logic_fabric_foundry_1__delete', tool_input: { kind: 'logicBlock', name: 'Financials_Z' } }, 'codex');
+    assert.equal(unlisted.decision, 'deny');
+    assert.match(unlisted.reason, /isn't in an approved file/);
+    assert.equal(run('gate.mjs', { cwd: planning.root, hook_event_name: 'PreToolUse', tool_name: 'mcp__codex_apps__logic_fabric_foundry_1__get', tool_input: { kind: 'logicFlow' } }, 'codex').decision, 'allow');
+  });
+
+  test('a save through a ChatGPT app is exported', () => {
+    const ws = built();
+    const result = { kind: 'logicFlow', name: 'Origination_Check', created: true, id: '6cc11d7d-e5e6-f111-84e9-70a8a5b02d61', source: { kind: 'logicFlow', name: 'Origination_Check' } };
+    run('export.mjs', { cwd: ws.root, hook_event_name: 'PostToolUse', tool_name: 'mcp__codex_apps__logic_fabric_foundry_1__save', tool_input: { kind: 'logicFlow' }, tool_response: { content: [{ type: 'text', text: JSON.stringify(result) }] } }, 'codex');
+    assert.deepEqual(JSON.parse(readFileSync(join(ws.change, 'artifacts', 'logicFlow', 'Origination_Check.json'), 'utf8')), result.source);
+  });
+
   test('an apply_patch that moves a stage back is refused, one that moves it forward passes', () => {
     const ws = built();
     const patch = to => `*** Begin Patch\n*** Update File: ${ws.status}\n@@\n-stage: build\n+stage: ${to}\n quick: false\n*** End Patch\n`;
