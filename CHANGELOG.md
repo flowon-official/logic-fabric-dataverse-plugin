@@ -4,6 +4,20 @@ Each release is tagged `v<version>`. Releases before 0.10.0 were made from
 [flowon-official/ai-plugins](https://github.com/flowon-official/ai-plugins) (then named claude-plugins), tagged
 `logic-fabric-dataverse-v<version>`; this repository keeps their history and tags them `v<version>`.
 
+## 0.15.0 (2026-11-26)
+
+- The requirements document draws each business process in BPMN notation: lanes for who acts, user tasks for the
+  stages, timers for escalation, exclusive, parallel and inclusive gateways, and named ends. The documenter outlines
+  each process in a ```` ```bpmn ```` block taken from its definition, and `scripts/bpmn.mjs` lays it out and draws
+  it, with no other program. The PDF shows the diagram as vector graphics, and Word as an SVG picture with a PNG copy
+  for readers without SVG.
+- Each diagram is also saved next to the document as `<document>.<process>.bpmn` (BPMN 2.0 with its layout), which
+  BPMN tools such as Camunda Modeler or bpmn.io open and edit. The document command now runs the script for Markdown
+  too, to write these files.
+- The Word and PDF files start with a contents page: the level 2 and 3 headings, linked, with page numbers. The PDF is
+  printed twice, the second time with the pages where the first put each heading. Word asks to update the numbers when
+  it opens the file.
+
 ## 0.14.1 (2026-11-26)
 
 - The requirements document gives the current values of the reference data its logic reads, such as limits, rates or

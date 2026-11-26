@@ -3,18 +3,21 @@
 // It reads the Markdown the plugin writes: headings, paragraphs, lists (nested, numbered, task boxes), pipe tables,
 // quotes, code blocks and rules, with bold, italic, code, links and <br> inside them.
 //
-//   node scripts/document.mjs <document.md> --format word|pdf
+//   node scripts/document.mjs <document.md> --format markdown|word|pdf
 //
 // The file is written next to the Markdown, with the same name (.docx or .pdf). Word: the .docx is built here, with no
 // other program. PDF: the document becomes a web page that Microsoft Edge, Google Chrome or Chromium prints without
 // opening a window (LF_BROWSER names another Chromium-based browser); when none can print it, the page is written as
-// .html instead, to print from a browser. It reads only the Markdown, writes only that file, and needs no network.
+// .html instead, to print from a browser. Before the first level 2 heading it adds the contents (level 2 and 3
+// headings, with page numbers). A ```bpmn block (see bpmn.mjs) becomes a process diagram, and is also written as
+// <document>.<process>.bpmn, in every format. It reads only the Markdown, writes only those files, and needs no network.
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, delimiter, dirname, extname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { deflateRawSync } from 'node:zlib';
+import { drawProcess } from './bpmn.mjs';
 
 export const FORMATS = { markdown: 'md', md: 'md', word: 'docx', docx: 'docx', pdf: 'pdf' };
 
@@ -33,35 +36,67 @@ export function convert(source, format, { browser } = {}) {
     throw new Error(`There is no document at ${markdown}.`);
   }
 
-  if (extension === 'md') {
-    return { file: markdown, format: 'markdown', message: `The document is Markdown already: ${markdown}` };
-  }
-
   const text = readFileSync(markdown, 'utf8');
   const blocks = parse(text);
   const title = documentTitle(blocks) || basename(markdown, extname(markdown));
-  const target = join(dirname(markdown), `${basename(markdown, extname(markdown))}.${extension}`);
+  const name = basename(markdown, extname(markdown));
+  const target = join(dirname(markdown), `${name}.${extension}`);
+  const diagrams = collect(blocks, 'diagram');
+
+  // Each process diagram also as a BPMN file, in every format: <document>.<process>.bpmn.
+  const processes = writeProcesses(diagrams, dirname(markdown), name);
+  const done = first => [first, ...processes.map(p => `Wrote ${p}`)].join('\n');
+
+  if (extension === 'md') {
+    return { file: markdown, format: 'markdown', processes, message: done(`The document is Markdown already: ${markdown}`) };
+  }
 
   if (extension === 'docx') {
-    save(target, toDocx(blocks, { title }));
-    return { file: target, format: 'word', message: `Wrote ${target}` };
+    const pictures = diagrams.length ? picturesOf(diagrams, browser === undefined ? findBrowser() : browser) : new Map();
+    save(target, toDocx(blocks, { title, pictures }));
+    return { file: target, format: 'word', processes, message: done(`Wrote ${target}`) };
   }
 
-  const html = toHtml(blocks, { title });
+  let html = toHtml(blocks, { title });
   const printer = browser === undefined ? findBrowser() : browser;
-  const failure = printer ? printPdf(printer, html, target) : 'no Microsoft Edge, Google Chrome or Chromium was found';
+  let failure = printer ? printPdf(printer, html, target) : 'no Microsoft Edge, Google Chrome or Chromium was found';
+
+  // The contents' page numbers: where the first print put each heading. The numbers' column is the same width
+  // either way, so the second print breaks its pages in the same places.
+  if (!failure && outline(blocks).at >= 0) {
+    const pages = headingPages(readFileSync(target));
+    if (pages.size) {
+      html = toHtml(blocks, { title, pages });
+      failure = printPdf(printer, html, target);
+    }
+  }
 
   if (!failure) {
-    return { file: target, format: 'pdf', message: `Wrote ${target}` };
+    return { file: target, format: 'pdf', processes, message: done(`Wrote ${target}`) };
   }
 
-  const page = join(dirname(markdown), `${basename(markdown, extname(markdown))}.html`);
+  const page = join(dirname(markdown), `${name}.html`);
   save(page, html);
   return {
     file: page,
     format: 'html',
-    message: `Couldn't print the PDF: ${failure}. Wrote ${page} instead: open it in a browser and print it to PDF.`,
+    processes,
+    message: `Couldn't print the PDF: ${failure}. Wrote ${page} instead: open it in a browser and print it to PDF.${processes.map(p => `\nWrote ${p}`).join('')}`,
   };
+}
+
+// Writes each diagram's BPMN file next to the document, named after its process; returns the files.
+function writeProcesses(diagrams, folder, name) {
+  const used = new Set();
+  return diagrams.map((d, k) => {
+    const base = String(d.title || `process-${k + 1}`).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || `process-${k + 1}`;
+    let slug = base;
+    for (let n = 2; used.has(slug); n++) slug = `${base}-${n}`;
+    used.add(slug);
+    const file = join(folder, `${name}.${slug}.bpmn`);
+    save(file, d.bpmn);
+    return file;
+  });
 }
 
 function save(file, data) {
@@ -78,6 +113,7 @@ function save(file, data) {
 // ---------------------------------------------------------------------------------------------------------------
 // Markdown to blocks:
 //   { type: 'heading', level, inlines }   { type: 'paragraph', inlines }   { type: 'code', text }   { type: 'rule' }
+//   { type: 'diagram', svg, width, height, title } from a ```bpmn block (scripts/bpmn.mjs)
 //   { type: 'quote', blocks }              { type: 'table', head: [inlines], align: [left|center|right|null], rows }
 //   { type: 'list', ordered, start, items: [{ task: null|'open'|'done', inlines, children: [list] }] }
 // and inlines as runs: { text, bold, italic, code, href } or { br: true }.
@@ -113,9 +149,10 @@ function blocks(lines) {
 
     if ((m = FENCE.exec(line))) {
       const body = [];
+      const language = line.trim().slice(m[1].length).trim().toLowerCase();
       for (i++; i < lines.length && !lines[i].trim().startsWith(m[1]); i++) body.push(lines[i]);
       i++;
-      out.push({ type: 'code', text: body.join('\n') });
+      out.push(language === 'bpmn' ? { type: 'diagram', ...drawProcess(body.join('\n')) } : { type: 'code', text: body.join('\n') });
       continue;
     }
 
@@ -273,6 +310,19 @@ function readInline(s, style, runs) {
 
 const plain = runs => runs.map(r => r.br ? ' ' : r.text).join('');
 
+// The contents (the document's outline): its level 2 and 3 headings, each given an anchor, placed before the first
+// level 2 heading. A document with fewer than three such headings has none.
+function outline(blocks) {
+  const entries = [];
+  blocks.forEach((b, k) => {
+    if (b.type === 'heading' && (b.level === 2 || b.level === 3)) {
+      b.anchor = `h${entries.length + 1}`;
+      entries.push({ level: b.level, text: plain(b.inlines).trim(), anchor: b.anchor, index: k });
+    }
+  });
+  return { entries, at: entries.length >= 3 ? entries[0].index : -1 };
+}
+
 function documentTitle(blocks) {
   const heading = blocks.find(b => b.type === 'heading' && b.level === 1);
   return heading ? plain(heading.inlines).trim() : null;
@@ -319,7 +369,8 @@ function columnShares(table, capacity) {
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-export function toHtml(blocks, { title = 'Document' } = {}) {
+export function toHtml(blocks, { title = 'Document', pages = new Map() } = {}) {
+  const contents = { ...outline(blocks), pages };
   const footer = `"${String(title).replace(/[\\"]/g, '\\$&').replace(/</g, '\\3C ').replace(/\s+/g, ' ')}"`;
 
   return `<!doctype html>
@@ -358,19 +409,38 @@ code { font-family: Consolas, "Cascadia Mono", Menlo, monospace; font-size: 0.92
 pre code { background: none; padding: 0; font-size: inherit; }
 hr { border: 0; border-top: 1px solid #d0d7e2; margin: 10pt 0; }
 a { color: #0b57d0; text-decoration: none; }
+nav.contents { margin: 0; break-before: page; break-after: page; }
+nav.contents h2 { border: 0; }
+nav.contents ol { list-style: none; padding: 0; margin: 0; }
+nav.contents li { margin: 0; padding: 1.5pt 0; }
+nav.contents li.l3 { padding-left: 14pt; font-size: 9.5pt; }
+nav.contents a { color: inherit; display: flex; align-items: baseline; }
+nav.contents .d { flex: 1; border-bottom: 0.75pt dotted #98a2b3; margin: 0 4pt; min-width: 12pt; }
+nav.contents .n { min-width: 16pt; text-align: right; }
+figure.diagram { margin: 6pt auto 12pt; break-inside: avoid; }
+figure.diagram svg { display: block; width: 100%; height: auto; }
 </style>
 </head>
 <body>
-${htmlBlocks(blocks)}
+${htmlBlocks(blocks, contents)}
 </body>
 </html>
 `;
 }
 
-function htmlBlocks(blocks) {
-  return blocks.map(b => {
-    switch (b.type) {
-      case 'heading': return `<h${b.level} dir="auto">${htmlRuns(b.inlines)}</h${b.level}>`;
+function htmlBlocks(blocks, contents = { at: -1 }) {
+  return blocks.map((b, k) => (k === contents.at ? htmlContents(contents.entries, contents.pages) : '') + htmlBlock(b)).join('\n');
+}
+
+function htmlContents(entries, pages = new Map()) {
+  const items = entries.map(e => `<li class="l${e.level}"><a href="#${e.anchor}"><span class="t">${esc(e.text)}</span><span class="d"></span><span class="n">${pages.get(e.anchor) || ''}</span></a></li>`).join('');
+  return `<nav class="contents"><h2>Contents</h2><ol>${items}</ol></nav>\n`;
+}
+
+function htmlBlock(b) {
+  switch (b.type) {
+      case 'heading': return `<h${b.level} dir="auto"${b.anchor ? ` id="${b.anchor}"` : ''}>${htmlRuns(b.inlines)}</h${b.level}>`;
+      case 'diagram': return `<figure class="diagram" role="img" aria-label="${esc(b.title || 'Process diagram')}" style="max-width:${b.width}px">${b.svg}</figure>`;
       case 'paragraph': return `<p dir="auto">${htmlRuns(b.inlines)}</p>`;
       case 'code': return `<pre><code>${esc(b.text)}</code></pre>`;
       case 'rule': return '<hr>';
@@ -378,8 +448,7 @@ function htmlBlocks(blocks) {
       case 'list': return htmlList(b);
       case 'table': return htmlTable(b);
       default: return '';
-    }
-  }).join('\n');
+  }
 }
 
 function htmlRuns(runs) {
@@ -444,6 +513,73 @@ export function findBrowser(env = process.env, platform = process.platform) {
   }) || null;
 }
 
+// Every block of a type, quotes included.
+function collect(blocks, type) {
+  return blocks.flatMap(b => b.type === type ? [b] : b.type === 'quote' ? collect(b.blocks, type) : []);
+}
+
+// PNG copies of the diagrams for Word readers that can't draw SVG, made by the browser (at twice the size, for print);
+// a map from each diagram's SVG to its PNG. Without a browser, or when it fails, the map lacks it.
+function picturesOf(diagrams, browser) {
+  const pictures = new Map();
+  if (!browser) return pictures;
+  const work = mkdtempSync(join(tmpdir(), 'lf-document-'));
+  try {
+    diagrams.forEach((d, k) => {
+      const page = join(work, `diagram${k}.html`);
+      const png = join(work, `diagram${k}.png`);
+      writeFileSync(page, `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><style>html,body{margin:0;background:#fff}svg{display:block}</style></head><body>${d.svg}</body></html>`);
+      const shoot = sandbox => spawnSync(browser, [
+        '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-extensions',
+        '--disable-background-networking', '--disable-sync', `--user-data-dir=${join(work, 'profile')}`, '--hide-scrollbars',
+        `--window-size=${d.width},${d.height}`, '--force-device-scale-factor=2', '--default-background-color=FFFFFFFF',
+        ...(sandbox ? [] : ['--no-sandbox']), `--screenshot=${png}`, pathToFileURL(page).href,
+      ], { stdio: 'ignore', timeout: 60000, windowsHide: true });
+      shoot(true);
+      if (!existsSync(png) && process.platform === 'linux') shoot(false);
+      if (existsSync(png) && statSync(png).size > 0) pictures.set(d.svg, readFileSync(png));
+    });
+  } finally {
+    try {
+      rmSync(work, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    } catch {
+      // A browser still closing can hold the folder for a moment; the system's temp cleanup takes it.
+    }
+  }
+  return pictures;
+}
+
+// The page each contents heading starts on, from a PDF Chromium printed: its named destinations (h1, h2, ...) point
+// at page objects, numbered in the order of the page tree. Anything unexpected gives an empty map (no numbers).
+export function headingPages(pdf) {
+  const pages = new Map();
+  try {
+    const text = pdf.toString('latin1');
+    const objects = new Map();
+    for (const m of text.matchAll(/(?:^|[\r\n])(\d+) 0 obj\b([\s\S]*?)endobj/g)) objects.set(m[1], m[2]);
+    const order = [];
+    const walk = (id, depth) => {
+      const body = objects.get(id) || '';
+      if (depth > 20) return;
+      if (/\/Type\s*\/Pages\b/.test(body)) {
+        const kids = /\/Kids\s*\[([^\]]*)\]/.exec(body);
+        for (const k of kids ? kids[1].matchAll(/(\d+) 0 R/g) : []) walk(k[1], depth + 1);
+      } else if (/\/Type\s*\/Page\b/.test(body)) {
+        order.push(id);
+      }
+    };
+    const root = [...objects].find(([, body]) => /\/Type\s*\/Pages\b/.test(body) && !/\/Parent\b/.test(body));
+    if (root) walk(root[0], 0);
+    for (const m of text.matchAll(/\/(h\d+)\s*\[\s*(\d+) 0 R/g)) {
+      const page = order.indexOf(m[2]);
+      if (page >= 0 && !pages.has(m[1])) pages.set(m[1], page + 1);
+    }
+  } catch {
+    pages.clear();
+  }
+  return pages;
+}
+
 // Prints the page to the PDF file with the browser, headless, with a profile of its own that is deleted after;
 // returns null, or why it couldn't. Where Linux doesn't let the browser start its sandbox (as on Ubuntu, which
 // restricts the namespaces it needs), it prints again without one: the page is the script's own, with no scripts and
@@ -501,6 +637,12 @@ const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 const WIDTH = 9752; // A4 (11906 twips) less 1077 on each side
+const WP = 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';
+const A = 'http://schemas.openxmlformats.org/drawingml/2006/main';
+const PIC = 'http://schemas.openxmlformats.org/drawingml/2006/picture';
+const SVG_BLIP = '{96DAC541-7B7A-43D3-8B79-37D633B846F1}';
+// A transparent pixel: the picture Word shows when it can't draw SVG and no browser made a PNG of the diagram.
+const PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 const ALIGN = { left: 'left', center: 'center', right: 'right' };
 const SPACER = '<w:p><w:pPr><w:pStyle w:val="Spacer"/></w:pPr></w:p>';
 
@@ -508,32 +650,74 @@ const xml = s => String(s)
   .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-export function toDocx(blocks, { title = 'Document', created = new Date() } = {}) {
-  const context = { width: WIDTH, links: [], numbers: [] };
-  const body = wBlocks(blocks, context, false) || '<w:p/>';
-  const document = `${XML}<w:document xmlns:w="${W}" xmlns:r="${R}"><w:body>${body}<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1077" w:bottom="1134" w:left="1077" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+export function toDocx(blocks, { title = 'Document', created = new Date(), pictures = new Map() } = {}) {
+  const context = { width: WIDTH, links: [], numbers: [], images: [], pictures };
+  const contents = outline(blocks);
+  const body = wBlocks(blocks, context, false, contents) || '<w:p/>';
+  const document = `${XML}<w:document xmlns:w="${W}" xmlns:r="${R}" xmlns:wp="${WP}" xmlns:a="${A}" xmlns:pic="${PIC}"><w:body>${body}<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1077" w:bottom="1134" w:left="1077" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>`;
 
+  const images = context.images.map(img => `<Relationship Id="${img.id}" Type="${REL}/image" Target="media/${img.file}"/>`).join('');
   const links = context.links.map((href, k) => `<Relationship Id="rIdLink${k + 1}" Type="${REL}/hyperlink" Target="${xml(href)}" TargetMode="External"/>`).join('');
   const when = created.toISOString().replace(/\.\d+Z$/, 'Z');
   const footer = `${XML}<w:ftr xmlns:w="${W}" xmlns:r="${R}"><w:p><w:pPr><w:pStyle w:val="Footer"/></w:pPr><w:r><w:t xml:space="preserve">${xml(title)}</w:t></w:r><w:r><w:tab/><w:t xml:space="preserve">Page </w:t></w:r><w:fldSimple w:instr=" PAGE "><w:r><w:t>1</w:t></w:r></w:fldSimple><w:r><w:t xml:space="preserve"> of </w:t></w:r><w:fldSimple w:instr=" NUMPAGES "><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p></w:ftr>`;
 
   return zip([
-    ['[Content_Types].xml', `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`],
+    ['[Content_Types].xml', `${XML}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="svg" ContentType="image/svg+xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`],
     ['_rels/.rels', `${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL}/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>`],
     ['docProps/core.xml', `${XML}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${xml(title)}</dc:title><dcterms:created xsi:type="dcterms:W3CDTF">${when}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${when}</dcterms:modified></cp:coreProperties>`],
     ['word/document.xml', document],
-    ['word/_rels/document.xml.rels', `${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="${REL}/styles" Target="styles.xml"/><Relationship Id="rIdNumbering" Type="${REL}/numbering" Target="numbering.xml"/><Relationship Id="rIdSettings" Type="${REL}/settings" Target="settings.xml"/><Relationship Id="rIdFooter" Type="${REL}/footer" Target="footer1.xml"/>${links}</Relationships>`],
+    ['word/_rels/document.xml.rels', `${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="${REL}/styles" Target="styles.xml"/><Relationship Id="rIdNumbering" Type="${REL}/numbering" Target="numbering.xml"/><Relationship Id="rIdSettings" Type="${REL}/settings" Target="settings.xml"/><Relationship Id="rIdFooter" Type="${REL}/footer" Target="footer1.xml"/>${links}${images}</Relationships>`],
     ['word/styles.xml', STYLES],
     ['word/numbering.xml', numbering(context.numbers)],
-    ['word/settings.xml', `${XML}<w:settings xmlns:w="${W}"><w:defaultTabStop w:val="720"/><w:characterSpacingControl w:val="doNotCompress"/><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat></w:settings>`],
+    ['word/settings.xml', `${XML}<w:settings xmlns:w="${W}">${contents.at >= 0 ? '<w:updateFields w:val="true"/>' : ''}<w:defaultTabStop w:val="720"/><w:characterSpacingControl w:val="doNotCompress"/><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat></w:settings>`],
     ['word/footer1.xml', footer],
+    ...context.images.map(img => [`word/media/${img.file}`, img.data]),
   ]);
 }
 
-function wBlocks(blocks, context, quoted) {
-  return blocks.map(b => {
+function wBlocks(blocks, context, quoted, contents = { at: -1 }) {
+  return blocks.map((b, k) => {
+    const before = k === contents.at ? wContents(contents.entries) : '';
+    return before + wBlock(b, context, quoted);
+  }).join('');
+}
+
+// A TOC field over the level 2 and 3 headings, with the entries already in it (as links) so it reads well before
+// Word updates the page numbers.
+function wContents(entries) {
+  const field = (instr, inner) => `<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> ${instr} </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>${inner}<w:r><w:fldChar w:fldCharType="end"/></w:r>`;
+  const items = entries.map((e, k) => {
+    const link = `<w:hyperlink w:anchor="_Toc_${e.anchor}" w:history="1"><w:r><w:t xml:space="preserve">${xml(e.text)}</w:t></w:r><w:r><w:tab/></w:r>${field(`PAGEREF _Toc_${e.anchor} \\h`, '<w:r><w:t></w:t></w:r>')}</w:hyperlink>`;
+    const begin = k === 0 ? `<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \\o "2-3" \\h \\z \\u </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>` : '';
+    const end = k === entries.length - 1 ? '<w:r><w:fldChar w:fldCharType="end"/></w:r>' : '';
+    return `<w:p><w:pPr><w:pStyle w:val="TOC${e.level}"/></w:pPr>${begin}${link}${end}</w:p>`;
+  }).join('');
+  return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>' + wParagraph(wTextRun('Contents'), { style: 'TOCHeading' }) + items + '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+}
+
+// A process diagram as an inline picture, as wide as the page at most.
+function wDiagram(b, context) {
+  const n = context.images.length / 2 + 1;
+  const svgId = `rIdImage${n}s`;
+  const pngId = `rIdImage${n}p`;
+  context.images.push({ id: svgId, file: `diagram${n}.svg`, data: Buffer.from(b.svg, 'utf8') });
+  context.images.push({ id: pngId, file: `diagram${n}.png`, data: context.pictures.get(b.svg) || PIXEL });
+  const scale = Math.min(1, (context.width * 635) / (b.width * 9525));
+  const cx = Math.round(b.width * 9525 * scale);
+  const cy = Math.round(b.height * 9525 * scale);
+  const name = xml(b.title || `Process diagram ${n}`);
+  return `<w:p><w:pPr><w:keepNext/><w:spacing w:before="60" w:after="160"/><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${n}" name="${name}" descr="${name}"/><wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic><a:graphicData uri="${PIC}"><pic:pic><pic:nvPicPr><pic:cNvPr id="${n}" name="diagram${n}.svg"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${pngId}"><a:extLst><a:ext uri="${SVG_BLIP}"><asvg:svgBlip xmlns:asvg="http://schemas.microsoft.com/office/drawing/2016/SVG/main" r:embed="${svgId}"/></a:ext></a:extLst></a:blip><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
+}
+
+function wBlock(b, context, quoted) {
+  {
     switch (b.type) {
-      case 'heading': return wParagraph(wRuns(b.inlines, context), { style: `Heading${b.level}`, bidi: rightToLeft(b.inlines) });
+      case 'heading': {
+        const runs = wRuns(b.inlines, context);
+        const marked = b.anchor ? `<w:bookmarkStart w:id="${b.anchor.slice(1)}" w:name="_Toc_${b.anchor}"/>${runs}<w:bookmarkEnd w:id="${b.anchor.slice(1)}"/>` : runs;
+        return wParagraph(marked, { style: `Heading${b.level}`, bidi: rightToLeft(b.inlines) });
+      }
+      case 'diagram': return wDiagram(b, context);
       case 'paragraph': return wParagraph(wRuns(b.inlines, context), { style: quoted ? 'QuoteText' : null, bidi: rightToLeft(b.inlines) });
       case 'code': return wParagraph(b.text.split('\n').map((line, k) => `${k ? '<w:r><w:br/></w:r>' : ''}${wTextRun(line)}`).join(''), { style: 'Code' });
       case 'rule': return wParagraph('', { style: 'Rule' });
@@ -542,7 +726,7 @@ function wBlocks(blocks, context, quoted) {
       case 'quote': return wQuote(b, context) + SPACER;
       default: return '';
     }
-  }).join('');
+  }
 }
 
 function wParagraph(runs, { style, numbered, level = 0, indent, jc, bidi } = {}) {
@@ -646,6 +830,9 @@ const STYLES = `${XML}<w:styles xmlns:w="${W}">`
   + heading(4, 22, '2F5496')
   + heading(5, 21, '1D2433')
   + heading(6, 21, '1D2433')
+  + '<w:style w:type="paragraph" w:customStyle="1" w:styleId="TOCHeading"><w:name w:val="TOC Heading"/><w:basedOn w:val="Heading2"/><w:next w:val="Normal"/><w:pPr><w:outlineLvl w:val="9"/></w:pPr></w:style>'
+  + `<w:style w:type="paragraph" w:styleId="TOC2"><w:name w:val="toc 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:uiPriority w:val="39"/><w:unhideWhenUsed/><w:pPr><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="${WIDTH}"/></w:tabs><w:spacing w:before="40" w:after="20"/></w:pPr></w:style>`
+  + `<w:style w:type="paragraph" w:styleId="TOC3"><w:name w:val="toc 3"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:uiPriority w:val="39"/><w:unhideWhenUsed/><w:pPr><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="${WIDTH}"/></w:tabs><w:spacing w:after="0"/><w:ind w:left="280"/></w:pPr><w:rPr><w:sz w:val="19"/><w:szCs w:val="19"/></w:rPr></w:style>`
   + '<w:style w:type="paragraph" w:styleId="ListParagraph"><w:name w:val="List Paragraph"/><w:basedOn w:val="Normal"/><w:uiPriority w:val="34"/><w:qFormat/><w:pPr><w:spacing w:after="60"/></w:pPr></w:style>'
   + '<w:style w:type="paragraph" w:customStyle="1" w:styleId="TableText"><w:name w:val="Table Text"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="0" w:line="252" w:lineRule="auto"/></w:pPr><w:rPr><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr></w:style>'
   + '<w:style w:type="paragraph" w:customStyle="1" w:styleId="QuoteText"><w:name w:val="Quote Text"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="80"/></w:pPr><w:rPr><w:color w:val="33415C"/></w:rPr></w:style>'
@@ -679,7 +866,7 @@ function zip(files) {
   let offset = 0;
 
   for (const [name, content] of files) {
-    const data = Buffer.from(content, 'utf8');
+    const data = Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf8');
     const packed = deflateRawSync(data);
     const path = Buffer.from(name, 'utf8');
     const crc = crc32(data);

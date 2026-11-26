@@ -13,8 +13,8 @@
       "replacement": "```\nnode \"<plugin folder>/scripts/dashboard.mjs\"\n```\n\nThe plugin folder (`{plugin}`) is three folders above this skill's `SKILL.md` (`ports/skills/dashboard/`)."
     },
     {
-      "pattern": "```\\nnode \"\\$\\{CLAUDE_PLUGIN_ROOT\\}\\/scripts\\/document\\.mjs\" \"<the \\.md file>\" --format <word or pdf>\\n```\\n\\nIf the path above still shows `\\$\\{CLAUDE_PLUGIN_ROOT\\}`, the script is `scripts\\/document\\.mjs` in this plugin's folder\\n\\(`[^`]+`, under `~\\/\\.claude\\/plugins\\/`\\): find it with Glob and run it the same way\\.",
-      "replacement": "```\nnode \"<plugin folder>/scripts/document.mjs\" \"<the .md file>\" --format <word or pdf>\n```\n\nThe plugin folder (`{plugin}`) is three folders above this skill's `SKILL.md` (`ports/skills/document/`)."
+      "pattern": "```\\nnode \"\\$\\{CLAUDE_PLUGIN_ROOT\\}\\/scripts\\/document\\.mjs\" \"<the \\.md file>\" --format <markdown, word or pdf>\\n```\\n\\nIf the path above still shows `\\$\\{CLAUDE_PLUGIN_ROOT\\}`, the script is `scripts\\/document\\.mjs` in this plugin's folder\\n\\(`[^`]+`, under `~\\/\\.claude\\/plugins\\/`\\): find it with Glob and run it the same way\\.",
+      "replacement": "```\nnode \"<plugin folder>/scripts/document.mjs\" \"<the .md file>\" --format <markdown, word or pdf>\n```\n\nThe plugin folder (`{plugin}`) is three folders above this skill's `SKILL.md` (`ports/skills/document/`)."
     },
     {
       "pattern": ", mention that it can be opened in Claude on the web or desktop.",

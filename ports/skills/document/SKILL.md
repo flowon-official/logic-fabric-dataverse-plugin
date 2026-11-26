@@ -15,18 +15,23 @@ The document is Markdown unless the arguments name another format: `word` (or `d
 artifacts with `find` and `get` (with dependencies) and writes `logic-fabric/reports/document/<yyyy-mm-dd>.md`, the
 document's source in every format.
 
-For Word or PDF, then turn that file into the format, with Bash:
+Then run the script on that file, with Bash, in every format (for Markdown it writes only the processes' BPMN files):
 
 ```
-node "<plugin folder>/scripts/document.mjs" "<the .md file>" --format <word or pdf>
+node "<plugin folder>/scripts/document.mjs" "<the .md file>" --format <markdown, word or pdf>
 ```
 
 The plugin folder (`logic-fabric-dataverse`) is three folders above this skill's `SKILL.md` (`ports/skills/document/`).
 
-The script writes the `.docx` or `.pdf` next to the Markdown, with the same name, and changes nothing else; it needs no
-network. Microsoft Edge, Google Chrome or Chromium prints the PDF without opening a window. When none of them can, the
-script writes the document as an `.html` page instead: tell the user to open it in a browser and print it to PDF. If it
-says the file is open, ask the user to close it in Word or their PDF viewer, then run the script again.
+The script writes, next to the Markdown and with the same name, the `.docx` or `.pdf`, and each process diagram as
+`<name>.<process>.bpmn` (BPMN 2.0, which BPMN tools such as Camunda Modeler or bpmn.io open). It changes nothing else
+and needs no network. The Word and PDF files start with a contents page and show each process as a BPMN diagram; Word
+asks to update the contents' page numbers when it opens the file. Microsoft Edge, Google Chrome or Chromium prints the
+PDF without opening a window. When none of them can, the script writes the document as an `.html` page instead: tell
+the user to open it in a browser and print it to PDF. If it says the file is open, ask the user to close it in Word or
+their PDF viewer, then run the script again. If it says a BPMN outline has a mistake, fix that line of the outline in
+the Markdown and run it again.
 
-When it is done, summarize what the document covers, list anything it could not describe, and link the file: the Word
-or PDF file and the Markdown it came from. If a previous document exists, list what changed since it.
+When it is done, summarize what the document covers, list anything it could not describe, and link the files: the
+Word or PDF file, the Markdown it came from and the BPMN files. If a previous document exists, list what changed since
+it.

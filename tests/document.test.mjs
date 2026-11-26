@@ -7,7 +7,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as zlib from 'node:zlib';
 import { after, before, test } from 'node:test';
-import { convert, findBrowser, inlines, parse, toDocx, toHtml } from '../scripts/document.mjs';
+import { convert, findBrowser, headingPages, inlines, parse, toDocx, toHtml } from '../scripts/document.mjs';
+import { CREDIT } from './credit-outline.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../scripts/document.mjs', import.meta.url));
 
@@ -218,6 +219,96 @@ test('the browser is LF_BROWSER, else one found where it installs', () => {
   assert.equal(findBrowser({ PATH: join(root, 'nothing') }, 'linux'), null);
 });
 
+// A document with sections, so it has contents, and a process diagram.
+const LONG = [
+  '# Lending: business requirements',
+  '',
+  'Front page.',
+  '',
+  '## 1. Business processes',
+  '',
+  '### 1.1 Credit approval',
+  '',
+  '```bpmn',
+  CREDIT,
+  '```',
+  '',
+  '## 2. Workflows',
+  '',
+  'Text.',
+  '',
+  '### 2.1 Submit',
+  '',
+  'Text.',
+].join('\n');
+
+test('the contents lists the level 2 and 3 headings before the first one, linked, with page numbers when known', () => {
+  const blocks = parse(LONG);
+  const html = toHtml(blocks, { title: 'Lending' });
+  assert.ok(html.indexOf('<nav class="contents">') < html.indexOf('<h2 dir="auto" id="h1">'), 'before the first section');
+  assert.ok(html.indexOf('Front page.') < html.indexOf('<nav class="contents">'), 'after the front page');
+  assert.equal(html.match(/<li class="l[23]">/g).length, 4);
+  assert.match(html, /<li class="l3"><a href="#h2"><span class="t">1.1 Credit approval<\/span><span class="d"><\/span><span class="n"><\/span>/);
+  assert.match(toHtml(blocks, { title: 'Lending', pages: new Map([['h2', 7]]) }), /href="#h2">.*?<span class="n">7<\/span>/);
+  assert.doesNotMatch(toHtml(parse(SAMPLE)), /class="contents"/, 'no contents for a document of one section');
+
+  const files = unzip(toDocx(blocks, { title: 'Lending' }));
+  const document = files['word/document.xml'];
+  assert.match(document, /<w:instrText xml:space="preserve"> TOC \\o "2-3" \\h \\z \\u <\/w:instrText>/);
+  assert.match(document, /<w:bookmarkStart w:id="2" w:name="_Toc_h2"\/>.*1.1 Credit approval.*<w:bookmarkEnd w:id="2"\/>/);
+  assert.match(document, /<w:hyperlink w:anchor="_Toc_h2"/);
+  assert.match(files['word/settings.xml'], /<w:updateFields w:val="true"\/>/, 'Word fills in the page numbers');
+  assert.match(files['word/styles.xml'], /w:styleId="TOC3"/);
+});
+
+test('a ```bpmn block is a diagram: inline SVG in the PDF page, an SVG picture with a PNG in Word', () => {
+  const blocks = parse(LONG);
+  const diagram = blocks.find(b => b.type === 'diagram');
+  assert.equal(diagram.title, 'Credit approval');
+  assert.match(toHtml(blocks), /<figure class="diagram" role="img" aria-label="Credit approval" style="max-width:\d+px"><svg /);
+
+  const png = Buffer.from('not really a png');
+  const files = unzip(toDocx(blocks, { title: 'Lending', pictures: new Map([[diagram.svg, png]]) }));
+  assert.equal(files['word/media/diagram1.svg'], diagram.svg);
+  assert.equal(files['word/media/diagram1.png'], png.toString('utf8'));
+  assert.match(files['word/document.xml'], /<wp:inline .*<a:blip r:embed="rIdImage1p"><a:extLst><a:ext uri="\{96DAC541-7B7A-43D3-8B79-37D633B846F1\}"><asvg:svgBlip [^>]*r:embed="rIdImage1s"\/>/);
+  const extent = /<wp:extent cx="(\d+)" cy="(\d+)"\/>/.exec(files['word/document.xml']);
+  assert.ok(Number(extent[1]) <= 9752 * 635, 'no wider than the page');
+  assert.match(files['word/_rels/document.xml.rels'], /Id="rIdImage1s" Type="[^"]+\/image" Target="media\/diagram1.svg"/);
+  assert.match(files['[Content_Types].xml'], /<Default Extension="svg" ContentType="image\/svg\+xml"\/>/);
+  for (const [name, xml] of Object.entries(files)) if (name.endsWith('.xml') || name.endsWith('.rels')) assertWellFormed(name, xml);
+
+  const bare = unzip(toDocx(blocks, { title: 'Lending' }));
+  assert.equal(bare['word/media/diagram1.png'].slice(1, 4), 'PNG', 'without a browser, a blank PNG stands in');
+});
+
+test('every format writes each process as a BPMN file; a mistake in an outline stops it, naming the line', () => {
+  const markdown = join(root, 'lending.md');
+  writeFileSync(markdown, LONG);
+  const result = convert(markdown, 'markdown');
+  assert.deepEqual(result.processes, [join(root, 'lending.credit-approval.bpmn')]);
+  assert.match(readFileSync(result.processes[0], 'utf8'), /<bpmn:process id="Process_1" name="Credit approval"/);
+  assert.match(result.message, /Wrote .*lending\.credit-approval\.bpmn/);
+
+  const word = convert(markdown, 'word', { browser: null });
+  assert.deepEqual(word.processes, result.processes);
+
+  writeFileSync(markdown, LONG.replace('second -> approved2', 'second -> nowhere'));
+  assert.throws(() => convert(markdown, 'word', { browser: null }), /BPMN outline, line \d+: "nowhere" isn't declared/);
+});
+
+test('the contents\' page numbers come from where the printed PDF put each heading', () => {
+  const pdf = Buffer.from([
+    '%PDF-1.4',
+    '1 0 obj <</Type /Pages /Kids [2 0 R 3 0 R] /Count 2>> endobj',
+    '2 0 obj <</Type /Page /Parent 1 0 R>> endobj',
+    '3 0 obj <</Type /Page /Parent 1 0 R>> endobj',
+    '4 0 obj <</h1 [2 0 R /XYZ 0 800 0] /h2 [3 0 R /XYZ 0 400 0]>> endobj',
+  ].join('\n'), 'latin1');
+  assert.deepEqual([...headingPages(pdf)], [['h1', 1], ['h2', 2]]);
+  assert.equal(headingPages(Buffer.from('not a pdf')).size, 0);
+});
+
 const browser = findBrowser();
 
 test('an installed browser prints the PDF', { skip: !browser && 'no Edge, Chrome or Chromium here' }, () => {
@@ -226,4 +317,10 @@ test('an installed browser prints the PDF', { skip: !browser && 'no Edge, Chrome
   const result = convert(markdown, 'pdf');
   assert.equal(result.format, 'pdf', result.message);
   assert.equal(readFileSync(result.file).subarray(0, 5).toString(), '%PDF-');
+
+  const long = join(root, 'printed-long.md');
+  writeFileSync(long, LONG);
+  const printed = convert(long, 'pdf');
+  assert.equal(printed.format, 'pdf', printed.message);
+  assert.ok(headingPages(readFileSync(printed.file)).size >= 4, 'the contents found every heading');
 });

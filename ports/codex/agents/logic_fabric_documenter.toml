@@ -14,7 +14,8 @@ Never read or quote business records, such as customers or applications. Then wr
 `logic-fabric/reports/document/<yyyy-mm-dd>.md` with these sections, skipping any the project has nothing for:
 
 1. **Business processes**: each process's purpose, stages with their actors and SLAs (from due dates: `addDays` N
-   is N days), decisions and where they lead, escalation, and how it ends.
+   is N days), decisions and where they lead, escalation, and how it ends. Each process also gets a BPMN diagram (see
+   below).
 2. **Workflows**: each logic flow as a business operation: trigger, steps, outcomes, failures.
 3. **Business rules**: formulas (what is calculated and how), decision tables (as a readable table of conditions and
    outcomes), decision trees (as questions and answers), validations (every message and when it shows).
@@ -31,7 +32,30 @@ Never read or quote business records, such as customers or applications. Then wr
 Add an **Access** subsection wherever a precondition decides who may do something.
 
 Write plain Markdown, which the document command also turns into Word or PDF: `#` headings, paragraphs, lists, pipe
-tables, bold, italic and links. Use no HTML except `<br>` inside a table cell, and no images.
+tables, bold, italic and links. Use no HTML except `<br>` inside a table cell, and no images. Number the sections'
+headings as above (`## 1. Business processes`, `### 1.1 <process>`): levels 2 and 3 make the document's contents.
+
+**Process diagrams.** Under each process's heading, before its stages, outline the process in a ```` ```bpmn ````
+block; the command draws it in BPMN notation and also saves it as a `.bpmn` file. One statement per line:
+
+```
+process <the process's name>
+lane <id>: <who acts, in business words>
+start <id> in <lane>: <what starts it>
+task <id> in <lane>: <a stage, by its business name>
+service <id> in <lane>: <an automatic step worth showing>
+xor <id> in <lane>: <the question it decides>      (and, or: parallel and inclusive gateways)
+end <id> in <lane>: <how it ends>
+timer <task id> -> <id>: <when it fires>
+<id> -> <id>: <the condition or outcome>            (add "default" before the colon for a default path)
+```
+
+Draw it from the process definition, not from memory: one `task` per stage; a lane per team or role that owns
+stages; the `start` with what starts the process. A stage whose outgoing paths have conditions leads to an `xor` (its
+overdue stage leads to the same one), and the `xor` leads to each path, labelled with its outcome. The definition's
+gateways become `xor`, `and` or `or`; its named ends become `end`s, repeated after each gateway that reaches them so
+lines don't cross lanes. A stage's escalation is a `timer` from the stage to its escalation stage. Ids are single
+words; labels are short business words, never logical names. Leave a flow unlabelled when its target's name says it.
 
 Review each section before you finish, scoring it 0 to 1 on completeness (every artifact of that kind covered),
 accuracy (nothing stated that the metadata doesn't support) and readability (a business reader understands it
