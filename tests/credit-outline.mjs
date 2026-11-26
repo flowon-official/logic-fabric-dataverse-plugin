@@ -1,0 +1,26 @@
+// The Credit approval process as the documenter outlines it: two lanes, a timer, a gateway with a default flow, and
+// labels to escape. Shared by the tests.
+export const CREDIT = [
+  'process Credit approval',
+  'lane tier: Approver team for the tier',
+  'lane committee: Lending Credit Committee',
+  '# the first decision and its escalation',
+  'start ready in tier: Ready for credit decision',
+  'task decision in tier: Credit decision',
+  'timer decision -> overdue: Due date passed',
+  'task overdue in tier: Credit decision overdue',
+  'xor outcome in tier: Outcome?',
+  'end approved in tier: Approved',
+  'end declined in tier: Declined & closed',
+  'end returned in tier: Returned <to underwriting>',
+  'task second in committee: Second committee approval',
+  'end approved2 in committee: Approved',
+  'ready -> decision',
+  'decision -> outcome',
+  'overdue -> outcome',
+  'outcome -> approved',
+  'outcome -> declined',
+  'outcome -> returned default',
+  'outcome -> second: First committee approval',
+  'second -> approved2',
+].join('\n');

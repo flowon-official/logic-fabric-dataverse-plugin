@@ -291,6 +291,11 @@ to it, for example `/logic-fabric-dataverse:document pdf`. The plugin makes the 
 with Microsoft Edge, Google Chrome or Chromium; with none of them, it writes an HTML page that you can print to PDF
 from a browser.
 
+The Word and PDF files start with a contents page, with page numbers (Word asks to update them when it opens the
+file). Each business process is drawn as a BPMN diagram: its lanes, tasks, gateways, escalation timers and ends. Each
+diagram is also saved next to the document as a `.bpmn` file, which BPMN tools such as Camunda Modeler or bpmn.io open
+and edit.
+
 `/logic-fabric-dataverse:waive` asks a reviewer to waive a governance rule for the project, or for one artifact, with
 a reason and an optional end date. Logic Foundry records it, and `govern` then lists the rule as waived.
 
