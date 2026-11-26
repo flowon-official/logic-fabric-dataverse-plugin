@@ -24,8 +24,9 @@ agents/                       reviewer, explorer, documenter, process-analyst, s
 hooks/                        hooks.json and the checks; client.mjs reads each client's payloads and answers in its format
 ports/                        Codex and Copilot: command skills, hooks, agents (generated); config.json and
                               skills/setup/ (connects Codex or Copilot to Logic Foundry) are hand-written
-scripts/                      dashboard.mjs and its page template (the dashboard command); sync-expressions.mjs
-tests/                        node --test: the hooks on each client, the dashboard generator
+scripts/                      dashboard.mjs and its page template (the dashboard command); document.mjs (the
+                              document command's Word and PDF); sync-expressions.mjs
+tests/                        node --test: the hooks on each client, the dashboard generator, the document's formats
 evals/                        eval cases (see evals/README.md)
 ```
 

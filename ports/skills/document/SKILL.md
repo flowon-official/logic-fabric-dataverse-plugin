@@ -1,7 +1,7 @@
 ---
 name: document
-description: "Write a business requirements document (BRD) of a Logic Fabric project from its artifacts - the as-built description, section by section."
-argument-hint: "[project] [sections...]"
+description: "Write a business requirements document (BRD) of a Logic Fabric project from its artifacts - the as-built description, section by section - as Markdown, Word or PDF."
+argument-hint: "[project] [sections...] [markdown|word|pdf]"
 user-invocable: true
 disable-model-invocation: true
 ---
@@ -10,7 +10,23 @@ disable-model-invocation: true
 Read-only; runs any time. Write the business requirements document for the project in `workspace.yaml` (or the one
 given): (the text the user gave after the skill's name)
 
-Hand the work to the `logic-fabric-dataverse:documenter` agent (`logic_fabric_documenter` in Codex) with the project and the sections wanted (default:
-all eleven). It reads the artifacts with `find` and `get` (with dependencies) and writes
-`logic-fabric/reports/document/<yyyy-mm-dd>.md`. When it is done, summarize what the document covers, list
-anything it could not describe, and link the file. If a previous document exists, list what changed since it.
+The document is Markdown unless the arguments name another format: `word` (or `docx`) or `pdf`. Hand the work to the
+`logic-fabric-dataverse:documenter` agent (`logic_fabric_documenter` in Codex) with the project and the sections wanted (default: all eleven). It reads the
+artifacts with `find` and `get` (with dependencies) and writes `logic-fabric/reports/document/<yyyy-mm-dd>.md`, the
+document's source in every format.
+
+For Word or PDF, then turn that file into the format, with Bash:
+
+```
+node "<plugin folder>/scripts/document.mjs" "<the .md file>" --format <word or pdf>
+```
+
+The plugin folder (`logic-fabric-dataverse`) is three folders above this skill's `SKILL.md` (`ports/skills/document/`).
+
+The script writes the `.docx` or `.pdf` next to the Markdown, with the same name, and changes nothing else; it needs no
+network. Microsoft Edge, Google Chrome or Chromium prints the PDF without opening a window. When none of them can, the
+script writes the document as an `.html` page instead: tell the user to open it in a browser and print it to PDF. If it
+says the file is open, ask the user to close it in Word or their PDF viewer, then run the script again.
+
+When it is done, summarize what the document covers, list anything it could not describe, and link the file: the Word
+or PDF file and the Markdown it came from. If a previous document exists, list what changed since it.
