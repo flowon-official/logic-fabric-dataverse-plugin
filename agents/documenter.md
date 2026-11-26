@@ -27,6 +27,9 @@ Read the project with `find` and `get` (with dependencies) and write
 
 Add an **Access** subsection wherever a precondition decides who may do something.
 
+Write plain Markdown, which the document command also turns into Word or PDF: `#` headings, paragraphs, lists, pipe
+tables, bold, italic and links. Use no HTML except `<br>` inside a table cell, and no images.
+
 Review each section before you finish, scoring it 0 to 1 on completeness (every artifact of that kind covered),
 accuracy (nothing stated that the metadata doesn't support) and readability (a business reader understands it
 without the metadata). Rewrite a section that scores under 0.7, at most twice. List at the end what you could not

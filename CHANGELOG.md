@@ -4,6 +4,13 @@ Each release is tagged `v<version>`. Releases before 0.10.0 were made from
 [flowon-official/ai-plugins](https://github.com/flowon-official/ai-plugins) (then named claude-plugins), tagged
 `logic-fabric-dataverse-v<version>`; this repository keeps their history and tags them `v<version>`.
 
+## 0.14.0 (2026-11-26)
+
+- The requirements document comes as Markdown, Word or PDF: add `word` or `pdf` to `document`, for example
+  `/logic-fabric-dataverse:document pdf`. The Markdown is still written first, as the source, and the `.docx` or
+  `.pdf` goes next to it. The plugin builds the Word file itself. Microsoft Edge, Google Chrome or Chromium prints the
+  PDF without opening a window; with none of them, the plugin writes an HTML page that you print to PDF from a browser.
+
 ## 0.13.3 (2026-11-26)
 
 - Codex: the workflow's checks also cover Logic Foundry when Codex reaches it through ChatGPT, as a ChatGPT app with

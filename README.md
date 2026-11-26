@@ -281,10 +281,15 @@ These commands change nothing in the project, run at any time, and write their r
 
 | Command | What it does |
 |---|---|
-| `/logic-fabric-dataverse:document` | Writes the business requirements document from the deployed artifacts |
+| `/logic-fabric-dataverse:document` | Writes the business requirements document from the deployed artifacts, as Markdown, or as Word or PDF when you add `word` or `pdf` |
 | `/logic-fabric-dataverse:govern` | Checks the project against the governance rules and your own |
 | `/logic-fabric-dataverse:insights` | Analyzes the business processes: defects, bottlenecks, SLA risk, redesign ideas |
 | `/logic-fabric-dataverse:secure` | Who can run what, attack paths, missing access rules, exposed credentials |
+
+The requirements document is always written as Markdown first, and `word` or `pdf` adds a `.docx` or `.pdf` file next
+to it, for example `/logic-fabric-dataverse:document pdf`. The plugin makes the Word file itself. It prints the PDF
+with Microsoft Edge, Google Chrome or Chromium; with none of them, it writes an HTML page that you can print to PDF
+from a browser.
 
 `/logic-fabric-dataverse:waive` asks a reviewer to waive a governance rule for the project, or for one artifact, with
 a reason and an optional end date. Logic Foundry records it, and `govern` then lists the rule as waived.
